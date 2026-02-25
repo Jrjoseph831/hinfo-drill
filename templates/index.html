@@ -5,956 +5,3845 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Health Informatics Drill</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
+/* ================================================================
+   CSS RESET & BASE
+   ================================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
 :root{
-  --bg:#0D1117;--bg2:#161B22;--bg3:#21262D;--bg4:#30363D;
-  --text:#E6EDF3;--text2:#8B949E;--text3:#6E7681;
-  --blue:#58A6FF;--teal:#2EC4B6;--red:#F85149;--yellow:#D29922;--green:#3FB950;--purple:#BC8CFF;
-  --border:#30363D;--hover:#1C2128;
+  --bg-primary:#0D1117;
+  --bg-secondary:#161B22;
+  --bg-tertiary:#21262D;
+  --bg-overlay:rgba(13,17,23,0.85);
+  --color-primary:#58A6FF;
+  --color-accent:#2EC4B6;
+  --color-danger:#F85149;
+  --color-warning:#D29922;
+  --color-success:#3FB950;
+  --text-primary:#E6EDF3;
+  --text-secondary:#8B949E;
+  --text-muted:#484F58;
+  --border-color:#30363D;
+  --border-hover:#484F58;
+  --code-bg:#0D1117;
+  --code-text:#B1BAC4;
+  --font-sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-mono:"SF Mono","Cascadia Code","Fira Code",Consolas,monospace;
+  --radius-sm:4px;
+  --radius-md:8px;
+  --radius-lg:12px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md:0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg:0 8px 24px rgba(0,0,0,0.5);
+  --transition-fast:0.15s ease;
+  --transition-normal:0.25s ease;
+  --sidebar-width:60px;
+  --topbar-height:50px;
+  --right-sidebar-width:300px;
 }
-body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;overflow:hidden;height:100vh}
-.mono{font-family:'SF Mono','Cascadia Code','Fira Code',Consolas,monospace}
-button{cursor:pointer;font-family:inherit;border:none;border-radius:6px;padding:8px 16px;font-size:14px;transition:all .15s}
-input,select,textarea{font-family:inherit;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:14px;outline:none}
-input:focus,select:focus,textarea:focus{border-color:var(--blue)}
+
+html{font-size:14px}
+body{
+  font-family:var(--font-sans);
+  background:var(--bg-primary);
+  color:var(--text-primary);
+  line-height:1.5;
+  overflow:hidden;
+  height:100vh;
+}
+a{color:var(--color-primary);text-decoration:none}
+a:hover{text-decoration:underline}
+button{cursor:pointer;font-family:inherit;font-size:inherit}
+input,select,textarea{font-family:inherit;font-size:inherit}
 ::-webkit-scrollbar{width:8px;height:8px}
-::-webkit-scrollbar-track{background:var(--bg2)}
-::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:4px}
-::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+::-webkit-scrollbar-track{background:var(--bg-primary)}
+::-webkit-scrollbar-thumb{background:var(--border-color);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--border-hover)}
 
-/* SETUP SCREEN */
-#setup{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
-#setup.hidden{display:none}
-.setup-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:40px;max-width:720px;width:100%}
-.setup-header{text-align:center;margin-bottom:32px}
-.setup-header h1{font-size:28px;font-weight:700;color:var(--teal)}
-.setup-header h1 span{color:var(--text2);font-size:14px;display:block;margin-top:4px;font-weight:400}
-.form-section{margin-bottom:24px}
-.form-section h3{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px}
-.form-group{display:flex;flex-direction:column;gap:4px}
-.form-group label{font-size:12px;color:var(--text2);font-weight:500}
-.form-group select,.form-group input{width:100%}
-.radio-group{display:flex;gap:8px;flex-wrap:wrap}
-.radio-opt{background:var(--bg3);border:2px solid var(--border);border-radius:8px;padding:10px 14px;cursor:pointer;transition:all .15s;flex:1;min-width:140px;text-align:center}
-.radio-opt:hover{border-color:var(--text3)}
-.radio-opt.active{border-color:var(--teal);background:rgba(46,196,182,.1)}
-.radio-opt .ro-label{font-size:14px;font-weight:600;color:var(--text)}
-.radio-opt .ro-desc{font-size:11px;color:var(--text2);margin-top:2px}
-.toggle-row{display:flex;align-items:center;gap:12px}
-.toggle{position:relative;width:44px;height:24px;background:var(--bg4);border-radius:12px;cursor:pointer;transition:background .2s}
-.toggle.on{background:var(--teal)}
-.toggle::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;background:white;border-radius:50%;transition:transform .2s}
-.toggle.on::after{transform:translateX(20px)}
-.slider-row{display:flex;align-items:center;gap:12px}
-.slider-row input[type=range]{flex:1;accent-color:var(--teal)}
-.slider-val{background:var(--bg3);border-radius:6px;padding:4px 12px;font-weight:700;color:var(--teal);min-width:36px;text-align:center}
-.btn-start{width:100%;padding:14px;font-size:18px;font-weight:700;background:var(--teal);color:var(--bg);border-radius:8px;margin-top:8px}
-.btn-start:hover{filter:brightness(1.1)}
+/* ================================================================
+   ANIMATIONS
+   ================================================================ */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeInFast{from{opacity:0}to{opacity:1}}
+@keyframes slideInLeft{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideInRight{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 
-/* WORKSPACE */
+.fade-in{animation:fadeIn 0.3s ease forwards}
+.slide-in-left{animation:slideInLeft 0.3s ease forwards}
+.slide-in-right{animation:slideInRight 0.3s ease forwards}
+
+.spinner{
+  display:inline-block;width:20px;height:20px;
+  border:2px solid var(--border-color);
+  border-top-color:var(--color-accent);
+  border-radius:50%;
+  animation:spin 0.6s linear infinite;
+}
+.spinner-lg{width:40px;height:40px;border-width:3px}
+
+.loading-placeholder{
+  background:linear-gradient(90deg,var(--bg-tertiary) 25%,var(--border-color) 50%,var(--bg-tertiary) 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.5s infinite;
+  border-radius:var(--radius-sm);
+  height:16px;
+  margin:8px 0;
+}
+
+/* ================================================================
+   SETUP SCREEN
+   ================================================================ */
+#setup-screen{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:100vh;
+  padding:40px 20px;
+  overflow-y:auto;
+}
+#setup-screen.hidden{display:none}
+
+.setup-card{
+  background:var(--bg-secondary);
+  border:1px solid var(--border-color);
+  border-radius:var(--radius-lg);
+  max-width:800px;
+  width:100%;
+  padding:0;
+  box-shadow:var(--shadow-lg);
+  animation:fadeIn 0.5s ease;
+}
+
+.setup-header{
+  text-align:center;
+  padding:40px 40px 24px;
+  border-bottom:1px solid var(--border-color);
+  background:linear-gradient(135deg,rgba(46,196,182,0.05),rgba(88,166,255,0.05));
+  border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+}
+.setup-header .icon{
+  font-size:48px;
+  display:block;
+  margin-bottom:12px;
+  filter:drop-shadow(0 0 12px rgba(46,196,182,0.3));
+}
+.setup-header h1{
+  font-size:1.8rem;
+  font-weight:700;
+  color:var(--text-primary);
+  margin-bottom:6px;
+  letter-spacing:-0.02em;
+}
+.setup-header p{
+  color:var(--text-secondary);
+  font-size:0.95rem;
+}
+
+.setup-body{padding:32px 40px}
+
+.form-section{margin-bottom:28px}
+.form-section:last-child{margin-bottom:0}
+.form-section-title{
+  font-size:0.8rem;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:0.08em;
+  color:var(--color-accent);
+  margin-bottom:16px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.form-section-title::after{
+  content:"";flex:1;height:1px;background:var(--border-color);
+}
+
+.form-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-bottom:16px;
+}
+.form-row.single{grid-template-columns:1fr}
+
+.form-group{margin-bottom:0}
+.form-group label{
+  display:block;
+  font-size:0.85rem;
+  font-weight:500;
+  color:var(--text-secondary);
+  margin-bottom:6px;
+}
+.form-group select,
+.form-group input[type="text"],
+.form-group input[type="number"]{
+  width:100%;
+  padding:10px 12px;
+  background:var(--bg-tertiary);
+  border:1px solid var(--border-color);
+  border-radius:var(--radius-md);
+  color:var(--text-primary);
+  transition:border-color var(--transition-fast);
+}
+.form-group select:hover,
+.form-group input:hover{border-color:var(--border-hover)}
+.form-group select:focus,
+.form-group input:focus{
+  outline:none;
+  border-color:var(--color-primary);
+  box-shadow:0 0 0 3px rgba(88,166,255,0.15);
+}
+.form-group select option{background:var(--bg-tertiary);color:var(--text-primary)}
+
+.slider-group{display:flex;align-items:center;gap:12px}
+.slider-group input[type="range"]{
+  flex:1;
+  -webkit-appearance:none;
+  appearance:none;
+  height:6px;
+  background:var(--bg-tertiary);
+  border-radius:3px;
+  outline:none;
+}
+.slider-group input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:18px;height:18px;
+  background:var(--color-accent);
+  border-radius:50%;
+  cursor:pointer;
+  border:2px solid var(--bg-secondary);
+  box-shadow:0 0 6px rgba(46,196,182,0.3);
+}
+.slider-value{
+  min-width:36px;
+  text-align:center;
+  font-weight:700;
+  font-size:1.1rem;
+  color:var(--color-accent);
+  background:var(--bg-tertiary);
+  padding:4px 10px;
+  border-radius:var(--radius-sm);
+}
+
+.radio-group{display:flex;flex-direction:column;gap:8px}
+.radio-option{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:10px 14px;
+  background:var(--bg-tertiary);
+  border:1px solid var(--border-color);
+  border-radius:var(--radius-md);
+  cursor:pointer;
+  transition:all var(--transition-fast);
+}
+.radio-option:hover{border-color:var(--border-hover);background:rgba(33,38,45,0.8)}
+.radio-option.selected{
+  border-color:var(--color-accent);
+  background:rgba(46,196,182,0.05);
+}
+.radio-option input[type="radio"]{
+  margin-top:3px;
+  accent-color:var(--color-accent);
+}
+.radio-option .radio-label{font-weight:500;color:var(--text-primary)}
+.radio-option .radio-desc{font-size:0.8rem;color:var(--text-secondary);margin-top:2px}
+
+.toggle-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 16px;
+  background:var(--bg-tertiary);
+  border:1px solid var(--border-color);
+  border-radius:var(--radius-md);
+}
+.toggle-info{flex:1}
+.toggle-info .toggle-label{font-weight:500;color:var(--text-primary)}
+.toggle-info .toggle-desc{font-size:0.8rem;color:var(--text-secondary);margin-top:2px}
+
+.toggle-switch{
+  position:relative;
+  width:44px;height:24px;
+  flex-shrink:0;
+  margin-left:16px;
+}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-switch .slider{
+  position:absolute;inset:0;
+  background:var(--border-color);
+  border-radius:12px;
+  transition:var(--transition-fast);
+  cursor:pointer;
+}
+.toggle-switch .slider::before{
+  content:"";
+  position:absolute;
+  left:3px;top:3px;
+  width:18px;height:18px;
+  background:#fff;
+  border-radius:50%;
+  transition:var(--transition-fast);
+}
+.toggle-switch input:checked+.slider{background:var(--color-accent)}
+.toggle-switch input:checked+.slider::before{transform:translateX(20px)}
+
+.btn-start{
+  display:block;
+  width:100%;
+  padding:14px 24px;
+  margin-top:32px;
+  font-size:1.1rem;
+  font-weight:700;
+  color:#fff;
+  background:linear-gradient(135deg,var(--color-accent),#1a9e92);
+  border:none;
+  border-radius:var(--radius-md);
+  letter-spacing:0.02em;
+  transition:all var(--transition-normal);
+  box-shadow:0 4px 16px rgba(46,196,182,0.3);
+}
+.btn-start:hover{
+  transform:translateY(-1px);
+  box-shadow:0 6px 20px rgba(46,196,182,0.4);
+}
+.btn-start:active{transform:translateY(0)}
+.btn-start:disabled{
+  opacity:0.5;cursor:not-allowed;transform:none;
+  box-shadow:none;
+}
+
+/* ================================================================
+   WORKSPACE LAYOUT
+   ================================================================ */
 #workspace{display:none;height:100vh;flex-direction:column}
 #workspace.active{display:flex}
 
-/* TOP BAR */
-.topbar{height:48px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:16px;flex-shrink:0}
-.topbar-brand{font-weight:700;color:var(--teal);font-size:15px;white-space:nowrap}
-.topbar-clock{display:flex;align-items:center;gap:8px;margin-left:auto}
-.shift-bar{width:200px;height:6px;background:var(--bg4);border-radius:3px;overflow:hidden}
-.shift-bar-fill{height:100%;background:var(--teal);border-radius:3px;transition:width 1s}
-.topbar-tasks{font-size:13px;color:var(--text2)}
-.topbar-tasks b{color:var(--green)}
-.badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;background:var(--red);color:white;font-size:11px;font-weight:700;border-radius:9px;padding:0 5px}
-.btn-reset{background:var(--bg3);color:var(--red);font-size:12px;padding:6px 12px;border:1px solid var(--border)}
-.btn-reset:hover{background:var(--red);color:white}
-.role-badge{background:var(--bg3);color:var(--purple);font-size:11px;padding:3px 8px;border-radius:4px}
+/* Top Bar */
+.topbar{
+  height:var(--topbar-height);
+  background:var(--bg-secondary);
+  border-bottom:1px solid var(--border-color);
+  display:flex;
+  align-items:center;
+  padding:0 16px;
+  gap:16px;
+  flex-shrink:0;
+  z-index:100;
+}
+.topbar-logo{
+  font-weight:700;
+  font-size:1rem;
+  color:var(--color-accent);
+  white-space:nowrap;
+  display:flex;align-items:center;gap:6px;
+}
+.topbar-logo .logo-icon{font-size:1.2rem}
 
-/* MAIN LAYOUT */
-.main{display:flex;flex:1;overflow:hidden}
+.topbar-center{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:20px;
+}
+.shift-clock{
+  font-family:var(--font-mono);
+  font-size:1rem;
+  font-weight:600;
+  color:var(--text-primary);
+  background:var(--bg-tertiary);
+  padding:4px 14px;
+  border-radius:var(--radius-sm);
+  border:1px solid var(--border-color);
+  min-width:90px;
+  text-align:center;
+}
+.shift-clock.warning{color:var(--color-warning);border-color:var(--color-warning)}
+.shift-clock.danger{color:var(--color-danger);border-color:var(--color-danger)}
+.shift-progress{
+  width:200px;height:6px;
+  background:var(--bg-tertiary);
+  border-radius:3px;
+  overflow:hidden;
+}
+.shift-progress-bar{
+  height:100%;
+  background:linear-gradient(90deg,var(--color-accent),var(--color-primary));
+  border-radius:3px;
+  transition:width 1s linear;
+}
 
-/* SIDEBAR */
-.sidebar{width:56px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:4px;flex-shrink:0}
-.nav-btn{width:42px;height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:transparent;color:var(--text2);border-radius:8px;font-size:18px;position:relative;transition:all .15s}
-.nav-btn:hover{background:var(--bg3);color:var(--text)}
-.nav-btn.active{background:var(--bg3);color:var(--blue)}
-.nav-btn .nav-label{font-size:8px;margin-top:1px}
-.nav-btn .nav-badge{position:absolute;top:2px;right:2px;min-width:14px;height:14px;font-size:9px;background:var(--red);color:white;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+.topbar-right{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  white-space:nowrap;
+}
+.task-progress{
+  font-size:0.85rem;
+  color:var(--text-secondary);
+}
+.task-progress span{color:var(--color-accent);font-weight:600}
 
-/* CONTENT AREA */
-.content{flex:1;display:flex;overflow:hidden}
-.panel{display:none;flex:1;overflow:auto;padding:20px;flex-direction:column;gap:16px}
+.notification-bell{
+  position:relative;
+  background:none;
+  border:none;
+  color:var(--text-secondary);
+  font-size:1.1rem;
+  padding:6px;
+  border-radius:var(--radius-sm);
+  transition:all var(--transition-fast);
+}
+.notification-bell:hover{color:var(--text-primary);background:var(--bg-tertiary)}
+.notification-badge{
+  position:absolute;top:0;right:0;
+  min-width:16px;height:16px;
+  background:var(--color-danger);
+  color:#fff;
+  font-size:0.65rem;
+  font-weight:700;
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 4px;
+  animation:pulse 2s infinite;
+}
+.notification-badge.hidden{display:none}
+
+.btn-reset{
+  padding:5px 12px;
+  background:transparent;
+  border:1px solid var(--border-color);
+  color:var(--text-secondary);
+  border-radius:var(--radius-sm);
+  font-size:0.8rem;
+  transition:all var(--transition-fast);
+}
+.btn-reset:hover{
+  border-color:var(--color-danger);
+  color:var(--color-danger);
+  background:rgba(248,81,73,0.1);
+}
+
+.role-badge{
+  padding:4px 10px;
+  background:rgba(88,166,255,0.1);
+  border:1px solid rgba(88,166,255,0.2);
+  color:var(--color-primary);
+  border-radius:20px;
+  font-size:0.75rem;
+  font-weight:500;
+}
+
+/* Main Content Area */
+.workspace-body{
+  display:flex;
+  flex:1;
+  overflow:hidden;
+}
+
+/* Left Sidebar */
+.left-sidebar{
+  width:var(--sidebar-width);
+  background:var(--bg-secondary);
+  border-right:1px solid var(--border-color);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:8px 0;
+  gap:4px;
+  flex-shrink:0;
+}
+.nav-item{
+  position:relative;
+  width:44px;height:44px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:var(--radius-md);
+  font-size:1.2rem;
+  color:var(--text-secondary);
+  background:none;
+  border:none;
+  transition:all var(--transition-fast);
+  cursor:pointer;
+}
+.nav-item:hover{
+  background:var(--bg-tertiary);
+  color:var(--text-primary);
+}
+.nav-item.active{
+  background:rgba(88,166,255,0.1);
+  color:var(--color-primary);
+}
+.nav-item .nav-badge{
+  position:absolute;top:4px;right:4px;
+  min-width:14px;height:14px;
+  background:var(--color-danger);
+  color:#fff;
+  font-size:0.6rem;
+  font-weight:700;
+  border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 3px;
+}
+.nav-item .nav-badge.hidden{display:none}
+.nav-item .tooltip{
+  position:absolute;
+  left:calc(100% + 8px);
+  top:50%;transform:translateY(-50%);
+  background:var(--bg-tertiary);
+  color:var(--text-primary);
+  padding:4px 10px;
+  border-radius:var(--radius-sm);
+  font-size:0.75rem;
+  white-space:nowrap;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity var(--transition-fast);
+  z-index:200;
+  border:1px solid var(--border-color);
+  box-shadow:var(--shadow-sm);
+}
+.nav-item:hover .tooltip{opacity:1}
+
+/* Main Panels */
+.main-content{
+  flex:1;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  background:var(--bg-primary);
+}
+.panel{
+  display:none;
+  flex:1;
+  overflow:hidden;
+  flex-direction:column;
+}
 .panel.active{display:flex}
-.panel-title{font-size:20px;font-weight:700;margin-bottom:4px}
-.panel-subtitle{font-size:13px;color:var(--text2)}
 
-/* CARDS */
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px}
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
-.kpi{text-align:center;padding:20px 12px}
-.kpi-val{font-size:28px;font-weight:800;color:var(--teal)}
-.kpi-label{font-size:12px;color:var(--text2);margin-top:4px}
+.panel-header{
+  padding:16px 20px;
+  border-bottom:1px solid var(--border-color);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-shrink:0;
+}
+.panel-header h2{
+  font-size:1.1rem;
+  font-weight:600;
+  display:flex;align-items:center;gap:8px;
+}
+.panel-body{
+  flex:1;
+  overflow-y:auto;
+  padding:16px 20px;
+}
 
-/* EMAIL */
-.email-layout{display:flex;gap:0;flex:1;min-height:0;overflow:hidden}
-.email-list{width:340px;border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0}
-.email-item{padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
-.email-item:hover{background:var(--hover)}
-.email-item.active{background:var(--bg3)}
-.email-item.unread .email-subject{font-weight:700}
-.email-from{font-size:13px;color:var(--text);display:flex;justify-content:space-between}
-.email-subject{font-size:13px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.email-time{font-size:11px;color:var(--text3)}
-.email-detail{flex:1;padding:20px;overflow-y:auto}
-.email-detail-header{margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
-.email-detail-header h2{font-size:18px;margin-bottom:8px}
-.email-meta{font-size:12px;color:var(--text2)}
-.email-body{white-space:pre-wrap;font-size:14px;line-height:1.7}
-.email-reply{margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
-.email-reply textarea{width:100%;height:100px;resize:vertical;margin-bottom:8px}
-.priority-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
-.priority-dot.high{background:var(--red)}.priority-dot.normal{background:var(--blue)}.priority-dot.low{background:var(--text3)}
-.email-filters{display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid var(--border)}
-.email-filter-btn{background:transparent;color:var(--text2);font-size:12px;padding:4px 10px;border-radius:4px}
-.email-filter-btn.active{background:var(--bg3);color:var(--text)}
+/* Right Sidebar */
+.right-sidebar{
+  width:var(--right-sidebar-width);
+  background:var(--bg-secondary);
+  border-left:1px solid var(--border-color);
+  display:flex;
+  flex-direction:column;
+  flex-shrink:0;
+  transition:width var(--transition-normal),opacity var(--transition-normal);
+  overflow:hidden;
+}
+.right-sidebar.collapsed{width:0;opacity:0;border:none}
+.right-sidebar-header{
+  padding:12px 16px;
+  border-bottom:1px solid var(--border-color);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.right-sidebar-header h3{font-size:0.85rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em}
+.right-sidebar-body{
+  flex:1;
+  overflow-y:auto;
+  padding:12px 16px;
+}
+.btn-collapse{
+  background:none;border:none;
+  color:var(--text-secondary);
+  font-size:1rem;
+  padding:4px;
+  border-radius:var(--radius-sm);
+  transition:all var(--transition-fast);
+}
+.btn-collapse:hover{color:var(--text-primary);background:var(--bg-tertiary)}
 
-/* TASKS */
-.task-item{border:1px solid var(--border);border-radius:8px;padding:14px 16px;cursor:pointer;transition:all .15s;background:var(--bg2)}
-.task-item:hover{border-color:var(--text3)}
-.task-item.expanded{background:var(--bg3)}
-.task-header{display:flex;align-items:center;gap:10px}
-.task-status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.task-status-dot.pending{background:var(--text3)}.task-status-dot.in_progress{background:var(--blue)}.task-status-dot.completed{background:var(--green)}
-.task-title{font-size:14px;font-weight:600;flex:1}
-.task-badges{display:flex;gap:6px;flex-wrap:wrap}
-.tbadge{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600}
-.tbadge.cat{background:rgba(88,166,255,.15);color:var(--blue)}
-.tbadge.time{background:rgba(210,153,34,.15);color:var(--yellow)}
-.tbadge.prio-high{background:rgba(248,81,73,.15);color:var(--red)}
-.tbadge.tool{background:rgba(46,196,182,.15);color:var(--teal)}
-.task-detail{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:none}
-.task-item.expanded .task-detail{display:block}
-.task-desc{font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.6}
-.step-list{list-style:none;margin-bottom:12px}
-.step-list li{padding:6px 0;font-size:13px;display:flex;align-items:center;gap:8px}
-.step-check{width:16px;height:16px;border:2px solid var(--border);border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
-.step-check.done{background:var(--green);border-color:var(--green);color:var(--bg)}
-.task-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.btn-sm{font-size:12px;padding:6px 12px}
-.btn-blue{background:var(--blue);color:var(--bg)}.btn-blue:hover{filter:brightness(1.1)}
-.btn-green{background:var(--green);color:var(--bg)}.btn-green:hover{filter:brightness(1.1)}
-.btn-yellow{background:var(--yellow);color:var(--bg)}.btn-yellow:hover{filter:brightness(1.1)}
-.btn-ghost{background:var(--bg3);color:var(--text);border:1px solid var(--border)}.btn-ghost:hover{background:var(--bg4)}
-.hint-box{background:var(--bg);border:1px solid var(--yellow);border-radius:6px;padding:10px 14px;margin-top:8px;font-size:13px;color:var(--yellow)}
-.submit-area{margin-top:12px}
-.submit-area textarea{width:100%;height:80px;resize:vertical;margin-bottom:8px}
+.current-task-card{
+  background:var(--bg-tertiary);
+  border:1px solid var(--border-color);
+  border-radius:var(--radius-md);
+  padding:14px;
+  margin-bottom:12px;
+}
+.current-task-card h4{
+  font-size:0.9rem;
+  font-weight:600;
+  margin-bottom:8px;
+  color:var(--color-primary);
+}
+.current-task-card p{
+  font-size:0.8rem;
+  color:var(--text-secondary);
+  margin-bottom:10px;
+}
+.task-timer{
+  font-family:var(--font-mono);
+  font-size:0.85rem;
+  color:var(--color-accent);
+  margin-bottom:10px;
+}
+.progress-steps{margin:10px 0}
+.progress-step{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:4px 0;
+  font-size:0.8rem;
+  color:var(--text-secondary);
+}
+.progress-step.completed{color:var(--color-success)}
+.progress-step .step-dot{
+  width:8px;height:8px;
+  border-radius:50%;
+  background:var(--border-color);
+  flex-shrink:0;
+}
+.progress-step.completed .step-dot{background:var(--color-success)}
+.progress-step.active .step-dot{background:var(--color-primary)}
 
-/* SQL CONSOLE */
-.sql-layout{display:flex;flex-direction:column;flex:1;gap:12px;min-height:0}
-.sql-editor-wrap{position:relative}
-.sql-editor{width:100%;height:140px;resize:vertical;font-size:14px;padding:12px;line-height:1.5;background:var(--bg);border:1px solid var(--border);border-radius:8px}
-.sql-toolbar{display:flex;gap:8px;align-items:center}
-.sql-result{flex:1;overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--bg)}
-.sql-table{width:100%;border-collapse:collapse;font-size:13px}
-.sql-table th{background:var(--bg3);padding:8px 12px;text-align:left;font-size:12px;color:var(--text2);border-bottom:1px solid var(--border);position:sticky;top:0}
-.sql-table td{padding:6px 12px;border-bottom:1px solid var(--border);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sql-table tr:hover td{background:var(--hover)}
-.sql-status{font-size:12px;color:var(--text2);display:flex;gap:16px}
-.sql-error{color:var(--red);font-size:13px;padding:12px;white-space:pre-wrap}
-.sql-history{max-height:200px;overflow-y:auto}
-.sql-history-item{padding:6px 10px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sql-history-item:hover{background:var(--hover);color:var(--text)}
-.schema-ref{max-height:300px;overflow-y:auto}
-.schema-table{margin-bottom:8px}
-.schema-table summary{font-size:13px;font-weight:600;cursor:pointer;padding:4px 0;color:var(--teal)}
-.schema-col{font-size:12px;color:var(--text2);padding:2px 0 2px 16px}
+.btn-hint{
+  display:block;
+  width:100%;
+  padding:8px;
+  margin-top:10px;
+  background:rgba(88,166,255,0.1);
+  border:1px solid rgba(88,166,255,0.2);
+  color:var(--color-primary);
+  border-radius:var(--radius-sm);
+  font-size:0.8rem;
+  text-align:center;
+  transition:all var(--transition-fast);
+}
+.btn-hint:hover{background:rgba(88,166,255,0.15)}
 
-/* EHR */
-.ehr-search{display:flex;gap:8px;margin-bottom:12px}
-.ehr-search input{flex:1}
-.patient-list{border:1px solid var(--border);border-radius:8px;overflow:auto;max-height:300px}
-.patient-row{padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px;display:grid;grid-template-columns:100px 1fr 100px 80px;gap:8px;align-items:center}
-.patient-row:hover{background:var(--hover)}
-.patient-detail{display:none}
-.patient-detail.active{display:block}
-.patient-demo{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:16px}
-.patient-demo .field{font-size:13px}.patient-demo .field-label{font-size:11px;color:var(--text2)}
-.tab-bar{display:flex;gap:4px;margin-bottom:12px}
-.tab-btn{background:transparent;color:var(--text2);font-size:13px;padding:6px 14px;border-radius:6px 6px 0 0;border-bottom:2px solid transparent}
-.tab-btn.active{color:var(--text);border-bottom-color:var(--teal);background:var(--bg3)}
-.tab-content{display:none}.tab-content.active{display:block}
-.data-table{width:100%;border-collapse:collapse;font-size:12px}
-.data-table th{background:var(--bg3);padding:6px 10px;text-align:left;color:var(--text2);border-bottom:1px solid var(--border);position:sticky;top:0}
-.data-table td{padding:5px 10px;border-bottom:1px solid var(--border)}
-.data-table tr:hover td{background:var(--hover)}
-.abnormal{color:var(--red);font-weight:700}
+.assistance-section{
+  background:var(--bg-tertiary);
+  border:1px solid var(--border-color);
+  border-radius:var(--radius-md);
+  padding:14px;
+}
+.assistance-section h4{
+  font-size:0.85rem;font-weight:600;
+  color:var(--text-secondary);
+  margin-bottom:8px;
+}
+.hint-content{
+  font-size:0.8rem;
+  color:var(--text-secondary);
+  line-height:1.6;
+}
+.hint-content .hint-item{
+  padding:8px 10px;
+  background:var(--bg-secondary);
+  border-radius:var(--radius-sm);
+  margin-bottom:6px;
+  border-left:2px solid var(--color-primary);
+}
+.btn-ask-help{
+  display:block;
+  width:100%;
+  padding:8px;
+  margin-top:10px;
+  background:rgba(46,196,182,0.1);
+  border:1px solid rgba(46,196,182,0.2);
+  color:var(--color-accent);
+  border-radius:var(--radius-sm);
+  font-size:0.8rem;
+  text-align:center;
+  transition:all var(--transition-fast);
+}
+.btn-ask-help:hover{background:rgba(46,196,182,0.15)}
 
-/* DASHBOARD */
-.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.chart-card{padding:16px}
-.chart-card h3{font-size:14px;color:var(--text2);margin-bottom:12px}
-.bar-chart{display:flex;flex-direction:column;gap:6px}
-.bar-row{display:flex;align-items:center;gap:8px;font-size:12px}
-.bar-label{width:140px;text-align:right;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
-.bar-track{flex:1;height:20px;background:var(--bg);border-radius:3px;overflow:hidden}
-.bar-fill{height:100%;border-radius:3px;transition:width .5s}
-.bar-val{width:50px;font-size:11px;color:var(--text2)}
+/* ================================================================
+   INBOX PANEL
+   ================================================================ */
+.inbox-layout{
+  display:flex;
+  flex:1;
+  overflow:hidden;
+}
+.inbox-list{
+  width:360px;
+  border-right:1px solid var(--border-color);
+  display:flex;
+  flex-direction:column;
+  flex-shrink:0;
+  overflow:hidden;
+}
+.inbox-filters{
+  display:flex;
+  gap:0;
+  border-bottom:1px solid var(--border-color);
+  padding:0;
+  flex-shrink:0;
+}
+.inbox-filter-btn{
+  flex:1;
+  padding:10px 8px;
+  background:none;
+  border:none;
+  border-bottom:2px solid transparent;
+  color:var(--text-secondary);
+  font-size:0.8rem;
+  font-weight:500;
+  transition:all var(--transition-fast);
+  text-align:center;
+}
+.inbox-filter-btn:hover{color:var(--text-primary);background:var(--bg-tertiary)}
+.inbox-filter-btn.active{
+  color:var(--color-primary);
+  border-bottom-color:var(--color-primary);
+}
 
-/* PYTHON */
-.py-editor{width:100%;height:160px;resize:vertical;font-size:14px;padding:12px;line-height:1.5;background:var(--bg);border:1px solid var(--border);border-radius:8px}
-.py-output{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:100px;max-height:400px;overflow:auto;white-space:pre-wrap;font-size:13px}
+.inbox-items{
+  flex:1;
+  overflow-y:auto;
+}
+.email-item{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:12px 16px;
+  border-bottom:1px solid var(--border-color);
+  cursor:pointer;
+  transition:background var(--transition-fast);
+}
+.email-item:hover{background:var(--bg-tertiary)}
+.email-item.active{background:rgba(88,166,255,0.08);border-left:3px solid var(--color-primary)}
+.email-item.unread .email-sender{font-weight:700;color:var(--text-primary)}
+.email-item.unread .email-subject{font-weight:600;color:var(--text-primary)}
 
-/* HELP */
-.help-content{max-width:800px}
-.help-section{margin-bottom:20px}
-.help-section h3{font-size:15px;color:var(--teal);margin-bottom:8px}
-.help-section pre{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;overflow-x:auto;white-space:pre-wrap;margin:8px 0}
+.email-priority{
+  width:8px;height:8px;
+  border-radius:50%;
+  flex-shrink:0;
+  margin-top:6px;
+}
+.email-priority.urgent{background:var(--color-danger)}
+.email-priority.high{background:var(--color-warning)}
+.email-priority.normal{background:var(--color-success)}
+.email-priority.low{background:var(--text-muted)}
 
-/* LOADING */
-.loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text2)}
-.spinner{width:20px;height:20px;border:3px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .6s linear infinite;margin-right:10px}
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-.pulse{animation:pulse 1.5s ease-in-out infinite}
+.email-preview{flex:1;min-width:0}
+.email-sender{
+  font-size:0.85rem;
+  color:var(--text-secondary);
+  margin-bottom:2px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.email-subject{
+  font-size:0.85rem;
+  color:var(--text-secondary);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.email-time{
+  font-size:0.7rem;
+  color:var(--text-muted);
+  white-space:nowrap;
+  flex-shrink:0;
+}
 
-/* RIGHT SIDEBAR */
-.right-sidebar{width:280px;background:var(--bg2);border-left:1px solid var(--border);padding:16px;overflow-y:auto;flex-shrink:0;display:none}
-.right-sidebar.active{display:block}
-.rs-title{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:8px}
-.active-task-card{background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:12px}
-.active-task-card h4{font-size:14px;margin-bottom:4px}
-.active-task-card p{font-size:12px;color:var(--text2)}
-.help-panel-text{font-size:13px;color:var(--text2);white-space:pre-wrap;line-height:1.6}
+.email-detail{
+  flex:1;
+  overflow-y:auto;
+  padding:24px;
+  animation:fadeIn 0.2s ease;
+}
+.email-detail-empty{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--text-muted);
+  font-size:0.9rem;
+}
+.email-detail-header{
+  margin-bottom:20px;
+  padding-bottom:16px;
+  border-bottom:1px solid var(--border-color);
+}
+.email-detail-subject{
+  font-size:1.2rem;
+  font-weight:600;
+  margin-bottom:12px;
+}
+.email-meta{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:4px 12px;
+  font-size:0.8rem;
+}
+.email-meta dt{color:var(--text-muted);font-weight:500}
+.email-meta dd{color:var(--text-secondary)}
+
+.email-body{
+  font-size:0.9rem;
+  line-height:1.7;
+  color:var(--text-primary);
+  white-space:pre-wrap;
+}
+.email-reply{
+  margin-top:24px;
+  padding-top:16px;
+  border-top:1px solid var(--border-color);
+}
+.email-reply textarea{
+  width:100%;
+  min-height:100px;
+  padding:12px;
+  background:var(--bg-tertiary);
+  border:1px solid var(--border-color);
+  border-radius:var(--radius-md);
+  color:var(--text-primary);
+  resize:vertical;
+  margin-bottom:8px;
+}
+.email-reply textarea:focus{
+  outline:none;
+  border-color:var(--color-primary);
+}
+.btn-reply{
+  padding:8px 20px;
+  background:var(--color-primary);
+  color:#fff;
+  border:none;
+  border-radius:var(--radius-sm);
+  font-weight:500;
+  transition:all var(--transition-fast);
+}
+.btn-reply:hover{opacity:0.9}
+
+/* ================================================================
+   TASKS PANEL
+   ================================================================ */
+.tasks-layout{
+  display:flex;
+  flex:1;
+  overflow:hidden;
+}
+.tasks-list{
+  width:400px;
+  border-right:1px solid var(--border-color);
+  overflow-y:auto;
+  flex-shrink:0;
+}
+.task-card{
+  padding:14px 16px;
+  border-bottom:1px solid var(--border-color);
+  cursor:pointer;
+  transition:background var(--transition-fast);
+}
+.task-card:hover{background:var(--bg-tertiary)}
+.task-card.active{background:rgba(88,166,255,0.08);border-left:3px solid var(--color-primary)}
+
+.task-card-header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:6px;
+}
+.task-status-dot{
+  width:10px;height:10px;
+  border-radius:50%;
+  flex-shrink:0;
+}
+.task-status-dot.pending{background:var(--text-muted)}
+.task-status-dot.in-progress{background:var(--color-primary)}
+.task-status-dot.completed{background:var(--color-success)}
+
+.task-title{
+  font-size:0.9rem;
+  font-weight:600;
+  flex:1;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.task-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.badge{
+  display:inline-flex;
+  align-items:center;
+  padding:2px 8px;
+  font-size:0.7rem;
+  font-weight:500;
+  border-radius:10px;
+  white-space:nowrap;
+}
+.badge-category{background:rgba(88,166,255,0.15);color:var(--color-primary)}
+.badge-time{background:rgba(46,196,182,0.15);color:var(--color-accent)}
+.badge-priority-urgent{background:rgba(248,81,73,0.15);color:var(--color-danger)}
+.badge-priority-high{background:rgba(210,153,34,0.15);color:var(--color-warning)}
+.badge-priority-medium{background:rgba(88,166,255,0.15);color:var(--color-primary)}
+.badge-priority-low{background:rgba(139,148,158,0.15);color:var(--text-secondary)}
+.badge-tools{background:rgba(139,148,158,0.1);color:var(--text-secondary)}
+
+.task-detail{
+  flex:1;
+  overflow-y:auto;
+  padding:24px;
+  animation:fadeIn 0.2s ease;
+}
+.task-detail-empty{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--text-muted);
+  font-size:0.9rem;
+}
+
+.task-detail-title{
+  font-size:1.2rem;
+  font-weight:600;
+  margin-bottom:16px;
+}
+.task-description{
+  font-size:0.9rem;
+  line-height:1.7;
+  color:var(--text-secondary);
+  margin-bottom:20px;
+  white-space:pre-wrap;
+}
+.task-related-email{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 12px;
+  background:rgba(88,166,255,0.1);
+  border:1px solid rgba(88,166,255,0.2);
+  border-radius:var(--radius-sm);
+  color:var(--color-primary);
+  font-size:0.8rem;
+  cursor:pointer;
+  margin-bottom:16px;
+  transition:all var(--transition-fast);
+}
+.task-related-email:hover{background:rgba(88,166,255,0.15)}
+
+.step-checklist{margin:16px 0}
+.step-checklist h4{
+  font-size:0.85rem;
+  font-weight:600;
+  color:var(--text-secondary);
+  margin-bottom:10px;
+}
+.step-item{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:8px 0;
+  font-size:0.85rem;
+  color:var(--text-primary);
+}
+.step-item input[type="checkbox"]{
+  margin-top:2px;
+  accent-color:var(--color-accent);
+}
+.step-item.checked{
+  color:var(--text-secondary);
+  text-decoration:line-through;
+}
+
+.task-actions{
+  display:flex;
+  gap:10px;
+  margin:16px 0;
+}
+.btn-get-hint{
+  padding:8px 16px;
+  background:rgba(88,166,255,0.1);
+  border:1px solid rgba(88,166,255,0.2);
+  color:var(--color-primary);
+  border-radius:var(--radius-sm);
+  font-size:0.85rem;
+  transition:all var(--transition-fast);
+}
+.btn-get-hint:hover{background:rgba(88,166,255,0.15)}
+
+.hint-display{
+  background:var(--bg-tertiary);
+  border:1px solid var(--border-color);
+  border-left:3px solid var(--color-primary);
+  border-radius:var(--radius-sm);
+  padding:12px 16px;
+  margin:12px 0;
+  font-size:0.85rem;
+  color:var(--text-secondary);
+  line-height:1.6;
+  animation:fadeIn 0.3s ease;
+}
+
+.task-submit{
+  margin-top:20px;
+  padding-top:16px;
+  border-top:1px solid var(--border-color);
+}
+.task-submit h4{
+  font-size:0.9rem;font-weight:600;margin-bottom:10px;
+}
+.task-submit textarea{
+  width:100%;
+  min-height:120px;
+  padding:12px;
+  background:var(--bg-tertiary);
+  border:1px solid var(--border-color);
+  border-radius:var(--radius-md);
+  color:var(--text-primary);
+  resize:vertical;
+  font-family:var(--font-mono);
+  font-size:0.85rem;
+  margin-bottom:10px;
+}
+.task-submit textarea:focus{outline:none;border-color:var(--color-primary)}
+.btn-submit-work{
+  padding:10px 24px;
+  background:var(--color-accent);
+  color:#fff;
+  border:none;
+  border-radius:var(--radius-sm);
+  font-weight:600;
+  transition:all var(--transition-fast);
+}
+.btn-submit-work:hover{opacity:0.9}
+
+/* ================================================================
+   EHR PANEL
+   ================================================================ */
+.ehr-layout{
+  display:flex;
+  flex:1;
+  overflow:hidden;
+}
+.ehr-sidebar{
+  width:360px;
+  border-right:1px solid var(--border-color);
+  display:flex;
+  flex-direction:column;
+  flex-shrink:0;
+  overflow:hidden;
+}
+.ehr-search{
+  padding:12px;
+  border-bottom:1px solid var(--border-color);
+  flex-shrink:0;
+}
+.ehr-search input{
+  width:100%;
+  padding:9px 12px;
+  padding-left:32px;
+  background:var(--bg-tertiary);
+  border:1px solid var(--border-color);
+  border-radius:var(--radius-md);
+  color:var(--text-primary);
+  font-size:0.85rem;
+}
+.ehr-search input:focus{outline:none;border-color:var(--color-primary)}
+.ehr-search .search-wrap{position:relative}
+.ehr-search .search-icon{
+  position:absolute;left:10px;top:50%;transform:translateY(-50%);
+  color:var(--text-muted);font-size:0.85rem;
+}
+
+.patient-list{
+  flex:1;
+  overflow-y:auto;
+}
+.patient-item{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:8px;
+  align-items:center;
+  padding:10px 14px;
+  border-bottom:1px solid var(--border-color);
+  cursor:pointer;
+  transition:background var(--transition-fast);
+  font-size:0.8rem;
+}
+.patient-item:hover{background:var(--bg-tertiary)}
+.patient-item.active{background:rgba(88,166,255,0.08);border-left:3px solid var(--color-primary)}
+.patient-mrn{font-family:var(--font-mono);color:var(--text-muted);font-size:0.75rem}
+.patient-name{font-weight:500;color:var(--text-primary)}
+.patient-info-brief{color:var(--text-secondary);font-size:0.75rem}
+
+.ehr-detail{
+  flex:1;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+.ehr-detail-empty{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  color:var(--text-muted);font-size:0.9rem;
+}
+
+.patient-demographics{
+  padding:16px 20px;
+  background:var(--bg-secondary);
+  border-bottom:1px solid var(--border-color);
+  flex-shrink:0;
+}
+.patient-demographics h3{
+  font-size:1.1rem;font-weight:600;margin-bottom:8px;
+  display:flex;align-items:center;gap:8px;
+}
+.demo-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:8px;
+  font-size:0.8rem;
+}
+.demo-item label{color:var(--text-muted);display:block;font-size:0.7rem;margin-bottom:1px}
+.demo-item span{color:var(--text-secondary)}
+
+.ehr-tabs{
+  display:flex;
+  border-bottom:1px solid var(--border-color);
+  flex-shrink:0;
+  overflow-x:auto;
+}
+.ehr-tab{
+  padding:10px 16px;
+  background:none;
+  border:none;
+  border-bottom:2px solid transparent;
+  color:var(--text-secondary);
+  font-size:0.8rem;
+  font-weight:500;
+  white-space:nowrap;
+  transition:all var(--transition-fast);
+}
+.ehr-tab:hover{color:var(--text-primary);background:var(--bg-tertiary)}
+.ehr-tab.active{color:var(--color-primary);border-bottom-color:var(--color-primary)}
+
+.ehr-tab-content{
+  flex:1;
+  overflow-y:auto;
+  padding:16px 20px;
+}
+
+/* Data tables (used in EHR, SQL, Dashboard) */
+.data-table-wrap{overflow-x:auto}
+.data-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:0.8rem;
+}
+.data-table th{
+  padding:8px 12px;
+  text-align:left;
+  font-weight:600;
+  color:var(--text-secondary);
+  background:var(--bg-tertiary);
+  border-bottom:1px solid var(--border-color);
+  white-space:nowrap;
+  position:sticky;
+  top:0;
+  z-index:1;
+}
+.data-table td{
+  padding:8px 12px;
+  border-bottom:1px solid var(--border-color);
+  color:var(--text-primary);
+}
+.data-table tr:hover td{background:rgba(88,166,255,0.03)}
+.data-table .abnormal{color:var(--color-danger);font-weight:600}
+.data-table .critical{color:var(--color-danger);font-weight:700;background:rgba(248,81,73,0.08)}
+
+/* Status badges */
+.status-active{color:var(--color-success)}
+.status-discharged{color:var(--text-secondary)}
+.status-pending{color:var(--color-warning)}
+
+/* ================================================================
+   SQL CONSOLE
+   ================================================================ */
+.sql-layout{
+  display:flex;
+  flex:1;
+  overflow:hidden;
+  flex-direction:column;
+}
+.sql-editor-section{
+  display:flex;
+  flex-direction:column;
+  border-bottom:1px solid var(--border-color);
+  flex-shrink:0;
+}
+.sql-editor-wrap{
+  position:relative;
+  display:flex;
+}
+.sql-line-numbers{
+  padding:12px 8px;
+  background:rgba(13,17,23,0.5);
+  color:var(--text-muted);
+  font-family:var(--font-mono);
+  font-size:0.85rem;
+  line-height:1.5;
+  text-align:right;
+  user-select:none;
+  min-width:40px;
+  border-right:1px solid var(--border-color);
+  white-space:pre-line;
+}
+.sql-editor{
+  flex:1;
+  padding:12px;
+  background:var(--code-bg);
+  border:none;
+  color:var(--code-text);
+  font-family:var(--font-mono);
+  font-size:0.85rem;
+  line-height:1.5;
+  resize:none;
+  min-height:120px;
+  max-height:250px;
+  outline:none;
+}
+.sql-toolbar{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  background:var(--bg-secondary);
+  border-top:1px solid var(--border-color);
+}
+.btn-execute{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 16px;
+  background:var(--color-accent);
+  color:#fff;
+  border:none;
+  border-radius:var(--radius-sm);
+  font-weight:600;
+  font-size:0.85rem;
+  transition:all var(--transition-fast);
+}
+.btn-execute:hover{opacity:0.9}
+.btn-execute:disabled{opacity:0.5;cursor:not-allowed}
+.btn-clear-editor{
+  padding:6px 12px;
+  background:var(--bg-tertiary);
+  border:1px solid var(--border-color);
+  color:var(--text-secondary);
+  border-radius:var(--radius-sm);
+  font-size:0.8rem;
+  transition:all var(--transition-fast);
+}
+.btn-clear-editor:hover{color:var(--text-primary);border-color:var(--border-hover)}
+
+.sql-history-toggle{
+  margin-left:auto;
+  padding:6px 12px;
+  background:none;
+  border:1px solid var(--border-color);
+  color:var(--text-secondary);
+  border-radius:var(--radius-sm);
+  font-size:0.8rem;
+  transition:all var(--transition-fast);
+}
+.sql-history-toggle:hover{color:var(--text-primary);border-color:var(--border-hover)}
+
+.sql-shortcut-hint{
+  font-size:0.7rem;
+  color:var(--text-muted);
+  margin-left:8px;
+}
+
+.sql-results-section{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.sql-results-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:8px 12px;
+  background:var(--bg-secondary);
+  border-bottom:1px solid var(--border-color);
+  font-size:0.8rem;
+  color:var(--text-secondary);
+  flex-shrink:0;
+}
+.sql-results-body{
+  flex:1;
+  overflow:auto;
+}
+.sql-results-body .data-table th{background:var(--bg-secondary)}
+.sql-error{
+  padding:16px;
+  color:var(--color-danger);
+  font-family:var(--font-mono);
+  font-size:0.85rem;
+  white-space:pre-wrap;
+}
+.sql-empty{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:1;
+  color:var(--text-muted);
+  font-size:0.85rem;
+  padding:40px;
+}
+
+.btn-export-csv{
+  padding:4px 10px;
+  background:none;
+  border:1px solid var(--border-color);
+  color:var(--text-secondary);
+  border-radius:var(--radius-sm);
+  font-size:0.75rem;
+  transition:all var(--transition-fast);
+}
+.btn-export-csv:hover{color:var(--text-primary);border-color:var(--border-hover)}
+
+.sql-history-panel{
+  position:absolute;
+  right:0;top:0;
+  width:300px;height:100%;
+  background:var(--bg-secondary);
+  border-left:1px solid var(--border-color);
+  z-index:50;
+  display:none;
+  flex-direction:column;
+  box-shadow:var(--shadow-lg);
+}
+.sql-history-panel.open{display:flex}
+.sql-history-panel h4{
+  padding:12px 16px;
+  border-bottom:1px solid var(--border-color);
+  font-size:0.85rem;
+  font-weight:600;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.sql-history-list{
+  flex:1;overflow-y:auto;
+}
+.sql-history-item{
+  padding:10px 16px;
+  border-bottom:1px solid var(--border-color);
+  cursor:pointer;
+  transition:background var(--transition-fast);
+}
+.sql-history-item:hover{background:var(--bg-tertiary)}
+.sql-history-item code{
+  font-family:var(--font-mono);
+  font-size:0.75rem;
+  color:var(--code-text);
+  display:block;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.sql-history-item .history-time{
+  font-size:0.65rem;
+  color:var(--text-muted);
+  margin-top:4px;
+}
+
+.common-queries{
+  border-top:1px solid var(--border-color);
+  flex-shrink:0;
+}
+.common-queries summary{
+  padding:10px 14px;
+  font-size:0.8rem;
+  font-weight:500;
+  color:var(--text-secondary);
+  cursor:pointer;
+  background:var(--bg-secondary);
+}
+.common-queries summary:hover{color:var(--text-primary)}
+.common-queries-list{
+  padding:8px;
+  max-height:200px;
+  overflow-y:auto;
+}
+.common-query-item{
+  padding:6px 10px;
+  margin-bottom:4px;
+  background:var(--bg-tertiary);
+  border-radius:var(--radius-sm);
+  cursor:pointer;
+  transition:background var(--transition-fast);
+  font-size:0.75rem;
+}
+.common-query-item:hover{background:var(--border-color)}
+.common-query-item .query-title{
+  font-weight:500;
+  color:var(--text-primary);
+  margin-bottom:2px;
+}
+.common-query-item code{
+  font-family:var(--font-mono);
+  font-size:0.7rem;
+  color:var(--text-muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  display:block;
+}
+
+/* ================================================================
+   DASHBOARD PANEL
+   ================================================================ */
+.dashboard-body{padding:20px}
+.kpi-row{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:16px;
+  margin-bottom:24px;
+}
+.kpi-card{
+  background:var(--bg-secondary);
+  border:1px solid var(--border-color);
+  border-radius:var(--radius-md);
+  padding:16px 20px;
+  text-align:center;
+}
+.kpi-card .kpi-value{
+  font-size:1.8rem;
+  font-weight:700;
+  color:var(--color-accent);
+  margin-bottom:4px;
+}
+.kpi-card .kpi-label{
+  font-size:0.8rem;
+  color:var(--text-secondary);
+}
+
+.charts-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-bottom:24px;
+}
+.chart-card{
+  background:var(--bg-secondary);
+  border:1px solid var(--border-color);
+  border-radius:var(--radius-md);
+  padding:16px;
+}
+.chart-card h4{
+  font-size:0.9rem;
+  font-weight:600;
+  margin-bottom:14px;
+  color:var(--text-primary);
+}
+
+.bar-chart{margin:0}
+.bar-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:6px;
+  font-size:0.8rem;
+}
+.bar-label{
+  width:140px;
+  text-align:right;
+  color:var(--text-secondary);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  flex-shrink:0;
+}
+.bar-track{
+  flex:1;
+  height:20px;
+  background:var(--bg-tertiary);
+  border-radius:3px;
+  overflow:hidden;
+  position:relative;
+}
+.bar-fill{
+  height:100%;
+  border-radius:3px;
+  transition:width 0.5s ease;
+  min-width:2px;
+}
+.bar-fill.teal{background:var(--color-accent)}
+.bar-fill.blue{background:var(--color-primary)}
+.bar-fill.green{background:var(--color-success)}
+.bar-value{
+  width:50px;
+  text-align:right;
+  color:var(--text-secondary);
+  font-family:var(--font-mono);
+  font-size:0.75rem;
+  flex-shrink:0;
+}
+
+.trend-table{
+  width:100%;
+  font-size:0.8rem;
+}
+.trend-table th,.trend-table td{
+  padding:6px 10px;
+  text-align:left;
+  border-bottom:1px solid var(--border-color);
+}
+.trend-table th{
+  color:var(--text-secondary);
+  font-weight:600;
+  background:var(--bg-tertiary);
+}
+
+.alerts-section{
+  background:var(--bg-secondary);
+  border:1px solid var(--border-color);
+  border-radius:var(--radius-md);
+  padding:16px;
+}
+.alerts-section h4{
+  font-size:0.9rem;font-weight:600;margin-bottom:12px;
+}
+.alert-item{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:10px;
+  border-bottom:1px solid var(--border-color);
+}
+.alert-item:last-child{border-bottom:none}
+.alert-severity{
+  padding:2px 8px;
+  border-radius:10px;
+  font-size:0.7rem;
+  font-weight:600;
+  flex-shrink:0;
+}
+.alert-severity.critical{background:rgba(248,81,73,0.15);color:var(--color-danger)}
+.alert-severity.warning{background:rgba(210,153,34,0.15);color:var(--color-warning)}
+.alert-severity.info{background:rgba(88,166,255,0.15);color:var(--color-primary)}
+.alert-text{font-size:0.8rem;color:var(--text-secondary);flex:1}
+.alert-time{font-size:0.7rem;color:var(--text-muted);white-space:nowrap}
+
+/* ================================================================
+   PYTHON CONSOLE
+   ================================================================ */
+.python-layout{
+  display:flex;flex:1;overflow:hidden;flex-direction:column;
+}
+.python-editor-section{
+  display:flex;flex-direction:column;
+  border-bottom:1px solid var(--border-color);
+  flex-shrink:0;
+}
+.python-editor{
+  width:100%;
+  padding:12px;
+  background:var(--code-bg);
+  border:none;
+  color:var(--code-text);
+  font-family:var(--font-mono);
+  font-size:0.85rem;
+  line-height:1.5;
+  resize:none;
+  min-height:150px;
+  max-height:300px;
+  outline:none;
+}
+.python-toolbar{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  background:var(--bg-secondary);
+  border-top:1px solid var(--border-color);
+}
+.python-output-section{
+  flex:1;display:flex;flex-direction:column;overflow:hidden;
+}
+.python-output-header{
+  padding:8px 12px;
+  background:var(--bg-secondary);
+  border-bottom:1px solid var(--border-color);
+  font-size:0.8rem;
+  font-weight:600;
+  color:var(--text-secondary);
+  flex-shrink:0;
+}
+.python-output{
+  flex:1;overflow:auto;
+  padding:12px;
+  background:var(--code-bg);
+  font-family:var(--font-mono);
+  font-size:0.85rem;
+  color:var(--code-text);
+  white-space:pre-wrap;
+}
+.python-output .error{color:var(--color-danger)}
+
+.python-helper{
+  padding:8px 12px;
+  background:var(--bg-secondary);
+  border-top:1px solid var(--border-color);
+  font-size:0.75rem;
+  color:var(--text-muted);
+  flex-shrink:0;
+}
+
+.snippets-section{
+  border-top:1px solid var(--border-color);
+  flex-shrink:0;
+}
+.snippets-section summary{
+  padding:8px 14px;
+  font-size:0.8rem;
+  font-weight:500;
+  color:var(--text-secondary);
+  cursor:pointer;
+  background:var(--bg-secondary);
+}
+.snippet-list{
+  padding:8px;max-height:180px;overflow-y:auto;
+}
+.snippet-item{
+  padding:6px 10px;margin-bottom:4px;
+  background:var(--bg-tertiary);
+  border-radius:var(--radius-sm);
+  cursor:pointer;
+  transition:background var(--transition-fast);
+}
+.snippet-item:hover{background:var(--border-color)}
+.snippet-item .snippet-title{font-weight:500;color:var(--text-primary);font-size:0.8rem}
+.snippet-item code{
+  font-family:var(--font-mono);font-size:0.7rem;
+  color:var(--text-muted);display:block;margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+/* ================================================================
+   HELP PANEL
+   ================================================================ */
+.help-layout{
+  flex:1;overflow-y:auto;padding:20px;
+}
+.help-section{
+  background:var(--bg-secondary);
+  border:1px solid var(--border-color);
+  border-radius:var(--radius-md);
+  margin-bottom:16px;
+}
+.help-section summary{
+  padding:14px 16px;
+  font-weight:600;
+  font-size:0.9rem;
+  cursor:pointer;
+  color:var(--text-primary);
+}
+.help-section summary:hover{background:var(--bg-tertiary)}
+.help-content{
+  padding:0 16px 16px;
+  font-size:0.85rem;
+  line-height:1.7;
+  color:var(--text-secondary);
+}
+.help-content pre{
+  background:var(--code-bg);
+  border:1px solid var(--border-color);
+  border-radius:var(--radius-sm);
+  padding:10px 12px;
+  overflow-x:auto;
+  margin:8px 0;
+  font-family:var(--font-mono);
+  font-size:0.8rem;
+  color:var(--code-text);
+}
+.help-content h5{
+  color:var(--text-primary);
+  margin:12px 0 6px;
+  font-size:0.85rem;
+}
+.help-content ul{
+  margin:6px 0;padding-left:20px;
+}
+.help-content li{margin-bottom:4px}
+
+/* ================================================================
+   NOTIFICATION PANEL
+   ================================================================ */
+.notification-panel{
+  position:fixed;
+  top:var(--topbar-height);
+  right:16px;
+  width:340px;
+  max-height:400px;
+  background:var(--bg-secondary);
+  border:1px solid var(--border-color);
+  border-radius:var(--radius-md);
+  box-shadow:var(--shadow-lg);
+  z-index:500;
+  display:none;
+  flex-direction:column;
+  animation:fadeIn 0.2s ease;
+}
+.notification-panel.open{display:flex}
+.notification-panel-header{
+  padding:12px 16px;
+  border-bottom:1px solid var(--border-color);
+  font-weight:600;
+  font-size:0.85rem;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.notification-list{
+  flex:1;overflow-y:auto;max-height:340px;
+}
+.notification-item{
+  padding:12px 16px;
+  border-bottom:1px solid var(--border-color);
+  cursor:pointer;
+  transition:background var(--transition-fast);
+}
+.notification-item:hover{background:var(--bg-tertiary)}
+.notification-item.unread{border-left:3px solid var(--color-primary)}
+.notification-item .notif-title{font-size:0.8rem;font-weight:500;margin-bottom:2px}
+.notification-item .notif-body{font-size:0.75rem;color:var(--text-secondary)}
+.notification-item .notif-time{font-size:0.65rem;color:var(--text-muted);margin-top:4px}
+
+/* ================================================================
+   CONFIRM DIALOG
+   ================================================================ */
+.modal-overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.6);
+  z-index:1000;
+  display:none;
+  align-items:center;
+  justify-content:center;
+}
+.modal-overlay.open{display:flex}
+.modal-dialog{
+  background:var(--bg-secondary);
+  border:1px solid var(--border-color);
+  border-radius:var(--radius-lg);
+  padding:24px;
+  max-width:420px;
+  width:90%;
+  box-shadow:var(--shadow-lg);
+  animation:fadeIn 0.2s ease;
+}
+.modal-dialog h3{font-size:1rem;margin-bottom:12px}
+.modal-dialog p{font-size:0.9rem;color:var(--text-secondary);margin-bottom:20px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end}
+.btn-modal-cancel{
+  padding:8px 16px;
+  background:var(--bg-tertiary);
+  border:1px solid var(--border-color);
+  color:var(--text-primary);
+  border-radius:var(--radius-sm);
+  transition:all var(--transition-fast);
+}
+.btn-modal-cancel:hover{border-color:var(--border-hover)}
+.btn-modal-confirm{
+  padding:8px 16px;
+  background:var(--color-danger);
+  color:#fff;
+  border:none;
+  border-radius:var(--radius-sm);
+  font-weight:600;
+  transition:all var(--transition-fast);
+}
+.btn-modal-confirm:hover{opacity:0.9}
+
+/* ================================================================
+   TOAST NOTIFICATIONS
+   ================================================================ */
+.toast-container{
+  position:fixed;
+  top:calc(var(--topbar-height) + 12px);
+  right:16px;
+  z-index:2000;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.toast{
+  padding:12px 16px;
+  background:var(--bg-secondary);
+  border:1px solid var(--border-color);
+  border-radius:var(--radius-md);
+  box-shadow:var(--shadow-md);
+  font-size:0.85rem;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  animation:slideInRight 0.3s ease;
+  max-width:360px;
+}
+.toast.success{border-left:3px solid var(--color-success)}
+.toast.error{border-left:3px solid var(--color-danger)}
+.toast.warning{border-left:3px solid var(--color-warning)}
+.toast.info{border-left:3px solid var(--color-primary)}
+.toast-icon{font-size:1rem;flex-shrink:0}
+.toast-message{flex:1;color:var(--text-primary)}
+.toast-close{
+  background:none;border:none;
+  color:var(--text-muted);
+  font-size:1rem;
+  cursor:pointer;
+  padding:0 4px;
+}
 </style>
 </head>
 <body>
+<!-- ================================================================
+     SETUP SCREEN
+     ================================================================ -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <div class="setup-header">
+      <span class="icon">⚕</span>
+      <h1>Health Informatics Drill</h1>
+      <p>Interactive Clinical Informatics Simulation Platform</p>
+    </div>
+    <div class="setup-body">
+      <form id="setup-form" autocomplete="off">
 
-<!-- SETUP SCREEN -->
-<div id="setup">
-<div class="setup-card">
-  <div class="setup-header">
-    <h1>&#9877; Health Informatics Drill<span>Interactive Clinical Informatics Simulation Platform</span></h1>
-  </div>
+        <!-- Facility & Role -->
+        <div class="form-section">
+          <div class="form-section-title">Facility &amp; Role</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="facility-type">Facility Type</label>
+              <select id="facility-type" required>
+                <option value="">Select facility...</option>
+                <option value="community_hospital">Community Hospital</option>
+                <option value="academic_medical_center">Academic Medical Center</option>
+                <option value="multi_site_health_system">Multi-Site Health System</option>
+                <option value="ambulatory_clinic">Ambulatory Clinic</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="user-role">Your Role</label>
+              <select id="user-role" required>
+                <option value="">Select role...</option>
+                <option value="clinical_informatics_analyst">Clinical Informatics Analyst</option>
+                <option value="health_information_specialist">Health Information Specialist</option>
+                <option value="clinical_data_analyst">Clinical Data Analyst</option>
+                <option value="ehr_system_administrator">EHR System Administrator</option>
+              </select>
+            </div>
+          </div>
+        </div>
 
-  <div class="form-section">
-    <h3>Facility &amp; Role</h3>
-    <div class="form-row">
-      <div class="form-group"><label>Facility Type</label>
-        <select id="facilityType"><option>Community Hospital</option><option>Academic Medical Center</option><option>Multi-Site Health System</option><option>Ambulatory Clinic</option></select>
-      </div>
-      <div class="form-group"><label>Your Role</label>
-        <select id="role"><option>Clinical Informatics Analyst</option><option>Health Information Specialist</option><option>Clinical Data Analyst</option><option>EHR System Administrator</option></select>
-      </div>
+        <!-- Workload Configuration -->
+        <div class="form-section">
+          <div class="form-section-title">Workload Configuration</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="num-tasks">Number of Tasks: <span id="num-tasks-display" class="slider-value" style="display:inline;font-size:0.85rem;padding:2px 6px">5</span></label>
+              <div class="slider-group">
+                <input type="range" id="num-tasks" min="1" max="15" value="5">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="task-time">Task Time Target</label>
+              <select id="task-time">
+                <option value="15">15 min — Quick Task</option>
+                <option value="30" selected>30 min — Half Hour</option>
+                <option value="60">1 hour — Standard</option>
+                <option value="120">2 hours — Extended</option>
+                <option value="240">4 hours — Half Shift</option>
+                <option value="480">8 hours — Full Shift</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row single">
+            <div class="form-group">
+              <label for="shift-duration">Shift Duration</label>
+              <select id="shift-duration">
+                <option value="2">2 hours</option>
+                <option value="4" selected>4 hours</option>
+                <option value="8">8 hours</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Difficulty & Assistance -->
+        <div class="form-section">
+          <div class="form-section-title">Difficulty &amp; Assistance</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Difficulty Level</label>
+              <div class="radio-group" id="difficulty-group">
+                <label class="radio-option selected">
+                  <input type="radio" name="difficulty" value="beginner" checked>
+                  <div>
+                    <div class="radio-label">Beginner</div>
+                    <div class="radio-desc">Guided with examples and detailed instructions</div>
+                  </div>
+                </label>
+                <label class="radio-option">
+                  <input type="radio" name="difficulty" value="intermediate">
+                  <div>
+                    <div class="radio-label">Intermediate</div>
+                    <div class="radio-desc">Some guidance, requires prior knowledge</div>
+                  </div>
+                </label>
+                <label class="radio-option">
+                  <input type="radio" name="difficulty" value="advanced">
+                  <div>
+                    <div class="radio-label">Advanced</div>
+                    <div class="radio-desc">Minimal support, realistic complexity</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Assistance Level</label>
+              <div class="radio-group" id="assistance-group">
+                <label class="radio-option selected">
+                  <input type="radio" name="assistance" value="full" checked>
+                  <div>
+                    <div class="radio-label">Full Walkthrough</div>
+                    <div class="radio-desc">Step-by-step instructions for every task</div>
+                  </div>
+                </label>
+                <label class="radio-option">
+                  <input type="radio" name="assistance" value="hints">
+                  <div>
+                    <div class="radio-label">Hints Available</div>
+                    <div class="radio-desc">General guidance when you ask for it</div>
+                  </div>
+                </label>
+                <label class="radio-option">
+                  <input type="radio" name="assistance" value="minimal">
+                  <div>
+                    <div class="radio-label">Minimal</div>
+                    <div class="radio-desc">Just the task, figure it out yourself</div>
+                  </div>
+                </label>
+                <label class="radio-option">
+                  <input type="radio" name="assistance" value="none">
+                  <div>
+                    <div class="radio-label">None</div>
+                    <div class="radio-desc">Complete independence, no help available</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tools -->
+        <div class="form-section">
+          <div class="form-section-title">Tools</div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">Python Console</div>
+              <div class="toggle-desc">Enable Python scripting for data analysis tasks</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="python-enabled">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Start Button -->
+        <button type="submit" class="btn-start" id="btn-start">
+          Start Shift &#9654;
+        </button>
+      </form>
     </div>
   </div>
-
-  <div class="form-section">
-    <h3>Workload Configuration</h3>
-    <div class="form-group" style="margin-bottom:12px"><label>Number of Tasks</label>
-      <div class="slider-row"><input type="range" id="taskCount" min="1" max="15" value="5"><span class="slider-val" id="taskCountVal">5</span></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Task Time Target</label>
-        <select id="timeTarget"><option value="15">15 min — Quick Task</option><option value="30">30 min — Half Hour</option><option value="60">1 hour — Standard</option><option value="120" selected>2 hours — Extended</option><option value="240">4 hours — Half Shift</option><option value="480">8 hours — Full Shift</option></select>
-      </div>
-      <div class="form-group"><label>Shift Duration</label>
-        <select id="shiftDuration"><option value="2">2 hours</option><option value="4">4 hours</option><option value="8" selected>8 hours</option></select>
-      </div>
-    </div>
-  </div>
-
-  <div class="form-section">
-    <h3>Difficulty</h3>
-    <div class="radio-group" id="difficultyGroup">
-      <div class="radio-opt" data-val="beginner"><div class="ro-label">Beginner</div><div class="ro-desc">Guided with examples</div></div>
-      <div class="radio-opt active" data-val="intermediate"><div class="ro-label">Intermediate</div><div class="ro-desc">Some guidance</div></div>
-      <div class="radio-opt" data-val="advanced"><div class="ro-label">Advanced</div><div class="ro-desc">Minimal support</div></div>
-    </div>
-  </div>
-
-  <div class="form-section">
-    <h3>Assistance Level</h3>
-    <div class="radio-group" id="assistGroup">
-      <div class="radio-opt" data-val="full"><div class="ro-label">Full Walkthrough</div><div class="ro-desc">Step-by-step for every task</div></div>
-      <div class="radio-opt active" data-val="hints"><div class="ro-label">Hints Available</div><div class="ro-desc">Guidance when you ask</div></div>
-      <div class="radio-opt" data-val="minimal"><div class="ro-label">Minimal</div><div class="ro-desc">Just the task description</div></div>
-      <div class="radio-opt" data-val="none"><div class="ro-label">None</div><div class="ro-desc">Complete independence</div></div>
-    </div>
-  </div>
-
-  <div class="form-section">
-    <h3>Tools</h3>
-    <div class="toggle-row">
-      <div class="toggle" id="pythonToggle" onclick="this.classList.toggle('on')"></div>
-      <div><div style="font-size:14px;font-weight:600">Python Console</div><div style="font-size:12px;color:var(--text2)">Enable Python scripting for data analysis tasks</div></div>
-    </div>
-  </div>
-
-  <button class="btn-start" onclick="startScenario()">Start Shift &#9654;</button>
 </div>
-</div>
-
-<!-- WORKSPACE -->
+<!-- ================================================================
+     WORKSPACE
+     ================================================================ -->
 <div id="workspace">
-  <!-- TOP BAR -->
-  <div class="topbar">
-    <div class="topbar-brand">&#9877; HI Drill</div>
-    <div class="topbar-clock">
-      <span id="clockTime" style="font-size:13px;color:var(--text2)"></span>
-      <div class="shift-bar"><div class="shift-bar-fill" id="shiftBarFill" style="width:0%"></div></div>
-      <span id="shiftRemaining" style="font-size:12px;color:var(--text2)"></span>
+  <!-- Top Bar -->
+  <header class="topbar">
+    <div class="topbar-logo">
+      <span class="logo-icon">⚕</span> HI Drill
     </div>
-    <div class="topbar-tasks"><b id="tasksCompleted">0</b>/<span id="tasksTotal">0</span> tasks</div>
-    <button class="btn-reset" onclick="resetScenario()">Reset Shift</button>
-    <span class="role-badge" id="roleBadge"></span>
-  </div>
-
-  <div class="main">
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-      <button class="nav-btn active" data-panel="inbox" onclick="switchPanel('inbox')">&#128231;<span class="nav-label">Inbox</span><span class="nav-badge" id="inboxBadge" style="display:none">0</span></button>
-      <button class="nav-btn" data-panel="tasks" onclick="switchPanel('tasks')">&#128203;<span class="nav-label">Tasks</span><span class="nav-badge" id="taskBadge" style="display:none">0</span></button>
-      <button class="nav-btn" data-panel="ehr" onclick="switchPanel('ehr')">&#127973;<span class="nav-label">EHR</span></button>
-      <button class="nav-btn" data-panel="sql" onclick="switchPanel('sql')">&#128190;<span class="nav-label">SQL</span></button>
-      <button class="nav-btn" data-panel="dashboard" onclick="switchPanel('dashboard')">&#128202;<span class="nav-label">Dash</span></button>
-      <button class="nav-btn" data-panel="python" id="pythonNav" style="display:none" onclick="switchPanel('python')">&#128013;<span class="nav-label">Python</span></button>
-      <button class="nav-btn" data-panel="help" onclick="switchPanel('help')">&#10067;<span class="nav-label">Help</span></button>
+    <div class="topbar-center">
+      <div class="shift-clock" id="shift-clock">00:00:00</div>
+      <div class="shift-progress">
+        <div class="shift-progress-bar" id="shift-progress-bar" style="width:0%"></div>
+      </div>
     </div>
+    <div class="topbar-right">
+      <div class="task-progress">
+        <span id="tasks-completed">0</span>/<span id="tasks-total">0</span> tasks
+      </div>
+      <button class="notification-bell" id="notification-bell" title="Notifications">
+        🔔
+        <span class="notification-badge hidden" id="notification-count">0</span>
+      </button>
+      <button class="btn-reset" id="btn-reset">Reset Shift</button>
+      <span class="role-badge" id="role-badge"></span>
+    </div>
+  </header>
 
-    <div class="content">
+  <div class="workspace-body">
+    <!-- Left Sidebar -->
+    <nav class="left-sidebar" id="left-sidebar">
+      <button class="nav-item active" data-panel="inbox" title="Inbox">
+        📧
+        <span class="nav-badge hidden" id="inbox-badge">0</span>
+        <span class="tooltip">Inbox</span>
+      </button>
+      <button class="nav-item" data-panel="tasks" title="Tasks">
+        📋
+        <span class="nav-badge hidden" id="tasks-badge">0</span>
+        <span class="tooltip">Tasks</span>
+      </button>
+      <button class="nav-item" data-panel="ehr" title="EHR">
+        🏥
+        <span class="tooltip">EHR</span>
+      </button>
+      <button class="nav-item" data-panel="sql" title="SQL Console">
+        💾
+        <span class="tooltip">SQL Console</span>
+      </button>
+      <button class="nav-item" data-panel="dashboard" title="Dashboard">
+        📊
+        <span class="tooltip">Dashboard</span>
+      </button>
+      <button class="nav-item hidden" data-panel="python" id="nav-python" title="Python">
+        🐍
+        <span class="tooltip">Python</span>
+      </button>
+      <button class="nav-item" data-panel="help" title="Help">
+        ❓
+        <span class="tooltip">Help / Reference</span>
+      </button>
+    </nav>
+
+    <!-- Main Content Panels -->
+    <div class="main-content" id="main-content">
+
       <!-- INBOX PANEL -->
       <div class="panel active" id="panel-inbox">
-        <div style="display:flex;align-items:center;gap:12px"><h2 class="panel-title">Inbox</h2><span id="emailCountLabel" class="panel-subtitle"></span></div>
-        <div class="email-filters">
-          <button class="email-filter-btn active" onclick="filterEmails('all',this)">All</button>
-          <button class="email-filter-btn" onclick="filterEmails('unread',this)">Unread</button>
-          <button class="email-filter-btn" onclick="filterEmails('urgent',this)">Urgent</button>
-          <button class="email-filter-btn" onclick="filterEmails('task',this)">Task-Related</button>
+        <div class="panel-header">
+          <h2>📧 Inbox</h2>
         </div>
-        <div class="email-layout card" style="padding:0;flex:1;min-height:400px">
-          <div class="email-list" id="emailList"></div>
-          <div class="email-detail" id="emailDetail"><div style="color:var(--text3);text-align:center;padding:60px 20px">Select an email to read</div></div>
+        <div class="inbox-layout">
+          <div class="inbox-list">
+            <div class="inbox-filters">
+              <button class="inbox-filter-btn active" data-filter="all">All</button>
+              <button class="inbox-filter-btn" data-filter="unread">Unread</button>
+              <button class="inbox-filter-btn" data-filter="urgent">Urgent</button>
+              <button class="inbox-filter-btn" data-filter="task">Task-Related</button>
+            </div>
+            <div class="inbox-items" id="inbox-items">
+              <div style="padding:40px;text-align:center;color:var(--text-muted)">
+                <div class="spinner"></div>
+                <p style="margin-top:12px">Loading emails...</p>
+              </div>
+            </div>
+          </div>
+          <div class="email-detail-empty" id="email-detail">
+            Select an email to read
+          </div>
         </div>
       </div>
 
       <!-- TASKS PANEL -->
       <div class="panel" id="panel-tasks">
-        <div style="display:flex;align-items:center;gap:12px"><h2 class="panel-title">Task Queue</h2><span id="taskCountLabel" class="panel-subtitle"></span></div>
-        <div id="taskList" style="display:flex;flex-direction:column;gap:10px"></div>
+        <div class="panel-header">
+          <h2>📋 Tasks</h2>
+        </div>
+        <div class="tasks-layout">
+          <div class="tasks-list" id="tasks-list">
+            <div style="padding:40px;text-align:center;color:var(--text-muted)">
+              <div class="spinner"></div>
+              <p style="margin-top:12px">Loading tasks...</p>
+            </div>
+          </div>
+          <div class="task-detail-empty" id="task-detail">
+            Select a task to view details
+          </div>
+        </div>
       </div>
 
       <!-- EHR PANEL -->
       <div class="panel" id="panel-ehr">
-        <h2 class="panel-title">Electronic Health Records</h2>
-        <div class="ehr-search">
-          <input type="text" id="ehrSearch" placeholder="Search by name or MRN..." onkeyup="if(event.key==='Enter')searchPatients()">
-          <button class="btn-sm btn-blue" onclick="searchPatients()">Search</button>
+        <div class="panel-header">
+          <h2>🏥 Electronic Health Records</h2>
         </div>
-        <div id="patientListWrap">
-          <div class="patient-list" id="patientList"></div>
-          <div style="margin-top:8px;display:flex;gap:8px" id="patientPager"></div>
-        </div>
-        <div class="patient-detail" id="patientDetail"></div>
-      </div>
-
-      <!-- SQL CONSOLE -->
-      <div class="panel" id="panel-sql">
-        <h2 class="panel-title">SQL Console</h2>
-        <div class="sql-layout">
-          <textarea class="sql-editor mono" id="sqlEditor" placeholder="-- Write your SQL query here&#10;-- Press Ctrl+Enter to execute&#10;SELECT * FROM patients LIMIT 10;"></textarea>
-          <div class="sql-toolbar">
-            <button class="btn-sm btn-green" onclick="executeSQL()">&#9654; Execute</button>
-            <button class="btn-sm btn-ghost" onclick="document.getElementById('sqlEditor').value=''">Clear</button>
-            <button class="btn-sm btn-ghost" onclick="exportCSV()">Export CSV</button>
-            <div class="sql-status" id="sqlStatus"></div>
-          </div>
-          <div style="display:flex;gap:12px;flex:1;min-height:0;overflow:hidden">
-            <div class="sql-result" id="sqlResult" style="flex:1"><div style="color:var(--text3);text-align:center;padding:40px">Results will appear here</div></div>
-            <div style="width:240px;overflow:hidden;display:flex;flex-direction:column;gap:8px;flex-shrink:0">
-              <details open><summary style="font-size:12px;color:var(--text2);cursor:pointer">Schema Reference</summary><div class="schema-ref" id="schemaRef"><div class="loading"><span class="spinner"></span>Loading...</div></div></details>
-              <details><summary style="font-size:12px;color:var(--text2);cursor:pointer">Query History</summary><div class="sql-history" id="sqlHistory"><div style="font-size:12px;color:var(--text3);padding:8px">No queries yet</div></div></details>
+        <div class="ehr-layout">
+          <div class="ehr-sidebar">
+            <div class="ehr-search">
+              <div class="search-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="ehr-search-input" placeholder="Search by name or MRN...">
+              </div>
+            </div>
+            <div class="patient-list" id="patient-list">
+              <div style="padding:40px;text-align:center;color:var(--text-muted)">
+                <div class="spinner"></div>
+                <p style="margin-top:12px">Loading patients...</p>
+              </div>
             </div>
           </div>
+          <div class="ehr-detail" id="ehr-detail">
+            <div class="ehr-detail-empty">Search and select a patient to view records</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SQL CONSOLE PANEL -->
+      <div class="panel" id="panel-sql">
+        <div class="sql-layout" style="position:relative">
+          <div class="sql-editor-section">
+            <div class="sql-editor-wrap">
+              <div class="sql-line-numbers" id="sql-line-numbers">1</div>
+              <textarea class="sql-editor" id="sql-editor" placeholder="Enter SQL query..." spellcheck="false">SELECT * FROM patients LIMIT 10;</textarea>
+            </div>
+            <div class="sql-toolbar">
+              <button class="btn-execute" id="btn-sql-execute">Execute ▶</button>
+              <button class="btn-clear-editor" id="btn-sql-clear">Clear</button>
+              <span class="sql-shortcut-hint">Ctrl+Enter to execute</span>
+              <button class="sql-history-toggle" id="btn-sql-history">History</button>
+            </div>
+          </div>
+          <div class="sql-results-section">
+            <div class="sql-results-header" id="sql-results-header">
+              <span id="sql-row-count">No results</span>
+              <div style="display:flex;gap:8px;align-items:center">
+                <span id="sql-exec-time"></span>
+                <button class="btn-export-csv hidden" id="btn-export-csv">Export CSV</button>
+              </div>
+            </div>
+            <div class="sql-results-body" id="sql-results-body">
+              <div class="sql-empty">Execute a query to see results</div>
+            </div>
+          </div>
+          <!-- History Panel -->
+          <div class="sql-history-panel" id="sql-history-panel">
+            <h4>Query History <button class="btn-collapse" id="btn-close-history">✕</button></h4>
+            <div class="sql-history-list" id="sql-history-list">
+              <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.8rem">No queries yet</div>
+            </div>
+          </div>
+          <!-- Common Queries -->
+          <details class="common-queries">
+            <summary>Common Queries Reference</summary>
+            <div class="common-queries-list" id="common-queries-list"></div>
+          </details>
         </div>
       </div>
 
       <!-- DASHBOARD PANEL -->
       <div class="panel" id="panel-dashboard">
-        <h2 class="panel-title">Operations Dashboard</h2>
-        <div class="kpi-grid" id="kpiGrid"></div>
-        <div class="chart-grid" id="chartGrid"></div>
+        <div class="panel-body dashboard-body" id="dashboard-body">
+          <div style="padding:40px;text-align:center;color:var(--text-muted)">
+            <div class="spinner spinner-lg"></div>
+            <p style="margin-top:16px">Loading dashboard data...</p>
+          </div>
+        </div>
       </div>
 
-      <!-- PYTHON PANEL -->
+      <!-- PYTHON CONSOLE PANEL -->
       <div class="panel" id="panel-python">
-        <h2 class="panel-title">Python Console</h2>
-        <p class="panel-subtitle" style="margin-bottom:8px">Available: sqlite3, json, csv, statistics, datetime. Database at 'hinfo_drill.db'</p>
-        <textarea class="py-editor mono" id="pyEditor" placeholder="# Write Python code here&#10;# Press Ctrl+Enter to run&#10;# Database connection is pre-configured as 'conn'&#10;&#10;rows = cursor.execute('SELECT COUNT(*) FROM patients').fetchone()&#10;print(f'Total patients: {rows[0]}')"></textarea>
-        <div style="display:flex;gap:8px;margin:8px 0">
-          <button class="btn-sm btn-green" onclick="executePython()">&#9654; Run</button>
-          <button class="btn-sm btn-ghost" onclick="document.getElementById('pyEditor').value=''">Clear</button>
+        <div class="python-layout">
+          <div class="python-editor-section">
+            <textarea class="python-editor" id="python-editor" placeholder="# Write Python code here..." spellcheck="false"># conn and cursor are pre-connected to the database
+cursor.execute("SELECT COUNT(*) FROM patients")
+print(f"Total patients: {cursor.fetchone()[0]}")</textarea>
+            <div class="python-toolbar">
+              <button class="btn-execute" id="btn-python-execute">Run Code ▶</button>
+              <button class="btn-clear-editor" id="btn-python-clear">Clear</button>
+              <span class="sql-shortcut-hint">Ctrl+Enter to run</span>
+            </div>
+          </div>
+          <div class="python-output-section">
+            <div class="python-output-header">Output</div>
+            <div class="python-output" id="python-output">Ready. Run code to see output here.</div>
+          </div>
+          <div class="python-helper">
+            Pre-connected: conn, cursor. Available: sqlite3, json, csv, datetime, statistics
+          </div>
+          <details class="snippets-section">
+            <summary>Example Snippets</summary>
+            <div class="snippet-list" id="python-snippets"></div>
+          </details>
         </div>
-        <div class="py-output mono" id="pyOutput">Output will appear here</div>
       </div>
 
       <!-- HELP PANEL -->
       <div class="panel" id="panel-help">
-        <h2 class="panel-title">Reference &amp; Help</h2>
-        <div class="help-content">
-          <div class="help-section card">
-            <h3>Common SQL Patterns for Health Informatics</h3>
-            <pre class="mono">-- Patient lookup by MRN
-SELECT * FROM patients WHERE mrn = 'MRN-000001';
-
--- Active encounters with department
-SELECT e.*, d.name AS department
-FROM encounters e
-JOIN departments d ON e.department_id = d.id
-WHERE e.status = 'active';
-
--- Lab results for a patient (with abnormal flagging)
-SELECT lr.test_name, lr.value, lr.unit,
-       lr.reference_range_low, lr.reference_range_high,
-       lr.abnormal_flag
-FROM lab_results lr
-JOIN patients p ON lr.patient_id = p.id
-WHERE p.mrn = 'MRN-000001'
-ORDER BY lr.result_date DESC;
-
--- Medication orders with drug names
-SELECT mo.*, m.name AS medication
-FROM medication_orders mo
-JOIN medications m ON mo.medication_id = m.id
-WHERE mo.patient_id = 1;
-
--- Department census (active patients by department)
-SELECT d.name, COUNT(e.id) AS active_patients
-FROM departments d
-LEFT JOIN encounters e ON d.id = e.department_id
-  AND e.status = 'active'
-GROUP BY d.id ORDER BY active_patients DESC;
-
--- Diagnosis frequency
-SELECT dx.icd10_code, dx.description, COUNT(*) AS freq
-FROM diagnoses dx
-GROUP BY dx.icd10_code
-ORDER BY freq DESC LIMIT 20;</pre>
-          </div>
-          <div class="help-section card">
-            <h3>Database Tables Quick Reference</h3>
-            <pre class="mono">patients        - id, mrn, first_name, last_name, dob, gender, status
-encounters      - id, patient_id, provider_id, department_id, encounter_type, admit_date, discharge_date, status
-diagnoses       - id, encounter_id, patient_id, icd10_code, description, diagnosis_type
-medication_orders - id, encounter_id, patient_id, medication_id, dose, unit, frequency, route, status
-medications     - id, name, generic_name, drug_class, default_dose, default_route
-lab_results     - id, encounter_id, patient_id, test_name, value, unit, abnormal_flag, result_date
-vital_signs     - id, encounter_id, patient_id, temperature, heart_rate, blood_pressure_systolic/diastolic, spo2
-allergies       - id, patient_id, allergen, reaction, severity, allergy_type
-orders          - id, encounter_id, patient_id, order_type, order_text, priority, status
-procedures      - id, encounter_id, patient_id, cpt_code, description, procedure_date
-providers       - id, npi, first_name, last_name, credentials, specialty, department_id
-departments     - id, name, code, floor, building, bed_count
-audit_log       - id, user_id, action, table_name, record_id, timestamp, ip_address
-hl7_messages    - id, message_type, direction, sending_facility, status, error_message
-clinical_alerts - id, patient_id, alert_type, severity, message, status
-system_status   - id, system_name, status, response_time_ms
-quality_measures- id, measure_name, measure_code, numerator, denominator, rate</pre>
-          </div>
-          <div class="help-section card">
-            <h3>HIPAA Quick Reference</h3>
-            <p style="font-size:13px;color:var(--text2)">
-              <b>Protected Health Information (PHI)</b> includes: names, dates, phone/fax numbers, email addresses, SSN, MRN, account numbers, biometric identifiers, photos, and any other unique identifying number.<br><br>
-              <b>Minimum Necessary Standard:</b> Access only the minimum PHI needed to perform your job function.<br><br>
-              <b>Break the Glass:</b> Emergency override access that is audited and must be justified.<br><br>
-              <b>Audit Trail:</b> All access to patient records must be logged with user ID, timestamp, action performed, and patient identifier.
-            </p>
-          </div>
-          <div class="help-section card">
-            <h3>HL7 Message Types</h3>
-            <pre class="mono">ADT - Admit/Discharge/Transfer
-ORM - Order Message
-ORU - Observation Result (Lab Results)
-SIU - Scheduling Information
-DFT - Detailed Financial Transaction
-MDM - Medical Document Management</pre>
-          </div>
-        </div>
+        <div class="help-layout" id="help-content"></div>
       </div>
+
     </div>
 
-    <!-- RIGHT SIDEBAR -->
-    <div class="right-sidebar" id="rightSidebar">
-      <div class="rs-title">Active Task</div>
-      <div id="activeTaskCard"><div style="font-size:13px;color:var(--text3)">No active task. Select a task to begin.</div></div>
-      <div class="rs-title" style="margin-top:16px">Assistance</div>
-      <div class="help-panel-text" id="helpPanelText">Select a task and click "Get Help" for guidance.</div>
+    <!-- Right Sidebar -->
+    <aside class="right-sidebar" id="right-sidebar">
+      <div class="right-sidebar-header">
+        <h3>Current Task</h3>
+        <button class="btn-collapse" id="btn-collapse-right" title="Collapse sidebar">✕</button>
+      </div>
+      <div class="right-sidebar-body" id="right-sidebar-body">
+        <div class="current-task-card" id="current-task-sidebar">
+          <h4>No active task</h4>
+          <p>Select a task from the Tasks panel to get started.</p>
+        </div>
+        <div class="assistance-section" id="assistance-section">
+          <h4>Assistance</h4>
+          <div class="hint-content" id="hint-content">
+            Select a task to see available guidance.
+          </div>
+          <button class="btn-ask-help" id="btn-ask-help">Ask for Help</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- Notification Panel (dropdown) -->
+<div class="notification-panel" id="notification-panel">
+  <div class="notification-panel-header">
+    Notifications
+    <button class="btn-collapse" id="btn-close-notifications">✕</button>
+  </div>
+  <div class="notification-list" id="notification-list">
+    <div style="padding:30px;text-align:center;color:var(--text-muted);font-size:0.8rem">No notifications</div>
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-dialog" id="modal-dialog">
+    <h3 id="modal-title">Confirm</h3>
+    <p id="modal-message">Are you sure?</p>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" id="modal-cancel">Cancel</button>
+      <button class="btn-modal-confirm" id="modal-confirm">Confirm</button>
     </div>
   </div>
 </div>
 
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
 <script>
-// ---------- STATE ----------
-const S = {
+/* ================================================================
+   STATE MANAGEMENT
+   ================================================================ */
+const state = {
   scenario: null,
+  config: null,
+  currentPanel: 'inbox',
   emails: [],
   tasks: [],
-  currentPanel: 'inbox',
+  patients: [],
   selectedEmail: null,
   selectedTask: null,
+  selectedPatientMrn: null,
+  patientCache: null,
   sqlHistory: [],
-  lastSqlResult: null,
-  shiftStart: null,
+  sqlLastResults: null,
+  shiftStartTime: null,
   shiftDuration: null,
-  clockInterval: null,
-  tables: null,
-  ehrPage: 1,
+  shiftTimerInterval: null,
+  notifications: [],
+  inboxFilter: 'all',
+  ehrTab: 'encounters',
+  rightSidebarOpen: true,
+  notificationPanelOpen: false,
+  sqlHistoryOpen: false
 };
 
-// ---------- API ----------
-async function api(url, method='GET', body=null) {
-  const opts = {method, headers:{'Content-Type':'application/json'}};
-  if(body) opts.body = JSON.stringify(body);
-  const r = await fetch(url, opts);
-  return r.json();
+/* ================================================================
+   ROLE DISPLAY NAMES
+   ================================================================ */
+const ROLE_NAMES = {
+  clinical_informatics_analyst: 'Clinical Informatics Analyst',
+  health_information_specialist: 'Health Information Specialist',
+  clinical_data_analyst: 'Clinical Data Analyst',
+  ehr_system_administrator: 'EHR System Administrator'
+};
+
+/* ================================================================
+   API HELPER
+   ================================================================ */
+async function api(url, method = 'GET', body = null) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json' }
+  };
+  if (body) opts.body = JSON.stringify(body);
+
+  try {
+    const res = await fetch(url, opts);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  } catch (e) {
+    console.error(`API ${method} ${url}:`, e);
+    throw e;
+  }
 }
 
-// ---------- RADIO GROUPS ----------
-document.querySelectorAll('.radio-group').forEach(g => {
-  g.querySelectorAll('.radio-opt').forEach(o => {
-    o.addEventListener('click', () => {
-      g.querySelectorAll('.radio-opt').forEach(x => x.classList.remove('active'));
-      o.classList.add('active');
-    });
+/* ================================================================
+   TOAST NOTIFICATIONS
+   ================================================================ */
+function showToast(message, type = 'info', duration = 4000) {
+  const container = document.getElementById('toast-container');
+  const icons = { success: '\u2713', error: '\u2717', warning: '\u26a0', info: '\u2139' };
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <span class="toast-icon">${icons[type] || ''}</span>
+    <span class="toast-message">${escapeHtml(message)}</span>
+    <button class="toast-close" onclick="this.parentElement.remove()">\u2715</button>
+  `;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+/* ================================================================
+   UTILITIES
+   ================================================================ */
+function escapeHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = String(str);
+  return div.innerHTML;
+}
+
+function formatTime(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function formatDateTime(dtStr) {
+  if (!dtStr) return '';
+  try {
+    const d = new Date(dtStr);
+    return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  } catch { return dtStr; }
+}
+
+function timeAgo(dtStr) {
+  if (!dtStr) return '';
+  try {
+    const d = new Date(dtStr);
+    const diff = (Date.now() - d.getTime()) / 1000;
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+  } catch { return ''; }
+}
+
+function priorityClass(p) {
+  if (!p) return 'low';
+  const pl = p.toLowerCase();
+  if (pl === 'urgent' || pl === 'critical') return 'urgent';
+  if (pl === 'high') return 'high';
+  if (pl === 'medium' || pl === 'normal') return 'medium';
+  return 'low';
+}
+
+/* ================================================================
+   SETUP FORM
+   ================================================================ */
+const setupForm = document.getElementById('setup-form');
+const numTasksSlider = document.getElementById('num-tasks');
+const numTasksDisplay = document.getElementById('num-tasks-display');
+
+numTasksSlider.addEventListener('input', () => {
+  numTasksDisplay.textContent = numTasksSlider.value;
+});
+
+// Radio button styling
+document.querySelectorAll('.radio-group').forEach(group => {
+  group.addEventListener('change', (e) => {
+    group.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('selected'));
+    e.target.closest('.radio-option').classList.add('selected');
   });
 });
 
-// SLIDER
-const tc = document.getElementById('taskCount');
-const tcv = document.getElementById('taskCountVal');
-tc.addEventListener('input', () => tcv.textContent = tc.value);
+setupForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
 
-// ---------- SCENARIO ----------
-async function startScenario() {
-  const btn = document.querySelector('.btn-start');
-  btn.textContent = 'Initializing...';
-  btn.disabled = true;
-  const data = {
-    facility_type: document.getElementById('facilityType').value,
-    role: document.getElementById('role').value,
-    task_count: parseInt(tc.value),
-    task_time_target_minutes: parseInt(document.getElementById('timeTarget').value),
-    shift_duration: parseInt(document.getElementById('shiftDuration').value),
-    difficulty: document.querySelector('#difficultyGroup .radio-opt.active').dataset.val,
-    assistance_level: document.querySelector('#assistGroup .radio-opt.active').dataset.val,
-    python_enabled: document.getElementById('pythonToggle').classList.contains('on'),
-  };
-  try {
-    const res = await api('/api/scenario/start', 'POST', data);
-    S.scenario = data;
-    S.shiftStart = Date.now();
-    S.shiftDuration = data.shift_duration * 3600 * 1000;
-    document.getElementById('setup').classList.add('hidden');
-    document.getElementById('workspace').classList.add('active');
-    document.getElementById('roleBadge').textContent = data.role;
-    if(data.python_enabled) document.getElementById('pythonNav').style.display='';
-    startClock();
-    await Promise.all([loadEmails(), loadTasks(), loadSchema(), loadDashboard()]);
-    updateBadges();
-    document.getElementById('rightSidebar').classList.add('active');
-  } catch(e) {
-    alert('Error starting scenario: ' + e.message);
-  }
-  btn.textContent = 'Start Shift \u25B6';
-  btn.disabled = false;
-}
+  const facilityType = document.getElementById('facility-type').value;
+  const userRole = document.getElementById('user-role').value;
 
-async function resetScenario() {
-  if(!confirm('Reset the entire scenario? All progress will be lost.')) return;
-  await api('/api/scenario/reset', 'POST');
-  clearInterval(S.clockInterval);
-  S.emails=[];S.tasks=[];S.selectedEmail=null;S.selectedTask=null;S.sqlHistory=[];
-  document.getElementById('workspace').classList.remove('active');
-  document.getElementById('setup').classList.remove('hidden');
-  document.getElementById('rightSidebar').classList.remove('active');
-}
-
-// ---------- CLOCK ----------
-function startClock() {
-  updateClock();
-  S.clockInterval = setInterval(updateClock, 1000);
-}
-function updateClock() {
-  const now = new Date();
-  document.getElementById('clockTime').textContent = now.toLocaleTimeString();
-  const elapsed = Date.now() - S.shiftStart;
-  const pct = Math.min(100, (elapsed / S.shiftDuration) * 100);
-  document.getElementById('shiftBarFill').style.width = pct + '%';
-  const rem = Math.max(0, S.shiftDuration - elapsed);
-  const h = Math.floor(rem/3600000), m = Math.floor((rem%3600000)/60000);
-  document.getElementById('shiftRemaining').textContent = h+'h '+m+'m left';
-  if(pct > 75) document.getElementById('shiftBarFill').style.background = 'var(--yellow)';
-  if(pct > 90) document.getElementById('shiftBarFill').style.background = 'var(--red)';
-}
-
-// ---------- NAVIGATION ----------
-function switchPanel(name) {
-  S.currentPanel = name;
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('panel-'+name).classList.add('active');
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.panel===name));
-  if(name==='dashboard') loadDashboard();
-  if(name==='ehr') searchPatients();
-}
-
-// ---------- EMAILS ----------
-let emailFilter = 'all';
-async function loadEmails() {
-  const res = await api('/api/emails?filter='+emailFilter);
-  S.emails = res.emails || [];
-  renderEmailList();
-}
-function filterEmails(f, btn) {
-  emailFilter = f;
-  document.querySelectorAll('.email-filter-btn').forEach(b=>b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-  loadEmails();
-}
-function renderEmailList() {
-  const el = document.getElementById('emailList');
-  document.getElementById('emailCountLabel').textContent = S.emails.length + ' messages';
-  if(!S.emails.length){ el.innerHTML='<div style="padding:20px;color:var(--text3);text-align:center">No emails</div>'; return; }
-  el.innerHTML = S.emails.map(e => `
-    <div class="email-item ${e.read?'':'unread'} ${S.selectedEmail?.id===e.id?'active':''}" onclick="selectEmail('${e.id}')">
-      <div class="email-from"><span><span class="priority-dot ${e.priority}"></span>${e.from_name}</span><span class="email-time">${e.timestamp.slice(11,16)}</span></div>
-      <div class="email-subject">${e.subject}</div>
-    </div>`).join('');
-  updateBadges();
-}
-async function selectEmail(id) {
-  const e = S.emails.find(x=>x.id===id);
-  if(!e) return;
-  S.selectedEmail = e;
-  if(!e.read) { e.read=true; await api(`/api/emails/${id}/read`,'POST'); }
-  renderEmailList();
-  const det = document.getElementById('emailDetail');
-  det.innerHTML = `
-    <div class="email-detail-header">
-      <h2>${e.subject}</h2>
-      <div class="email-meta">From: <b>${e.from_name}</b> (${e.from_role}) &lt;${e.from_email}&gt;<br>Date: ${e.timestamp}<br>Priority: <span class="priority-dot ${e.priority}"></span>${e.priority}</div>
-    </div>
-    <div class="email-body">${e.body}</div>
-    ${e.related_task_id ? `<div style="margin-top:12px"><button class="btn-sm btn-blue" onclick="goToTask('${e.related_task_id}')">Go to Related Task</button></div>` : ''}
-    <div class="email-reply">
-      <textarea id="replyText" placeholder="Type your reply..."></textarea>
-      <button class="btn-sm btn-blue" onclick="replyEmail('${e.id}')">Send Reply</button>
-      <span id="replyStatus" style="font-size:12px;color:var(--green);margin-left:8px"></span>
-    </div>`;
-  updateBadges();
-}
-async function replyEmail(id) {
-  const text = document.getElementById('replyText').value;
-  if(!text.trim()) return;
-  const res = await api(`/api/emails/${id}/reply`,'POST',{reply_text:text});
-  document.getElementById('replyStatus').textContent = 'Sent! Response: ' + (res.auto_response||'').slice(0,60)+'...';
-}
-function goToTask(taskId) {
-  switchPanel('tasks');
-  setTimeout(()=>{ const el=document.querySelector(`[data-taskid="${taskId}"]`); if(el){el.scrollIntoView({behavior:'smooth'});el.click();} },100);
-}
-
-// ---------- TASKS ----------
-async function loadTasks() {
-  const res = await api('/api/tasks');
-  S.tasks = res.tasks || [];
-  renderTasks();
-}
-function renderTasks() {
-  const el = document.getElementById('taskList');
-  const completed = S.tasks.filter(t=>t.status==='completed').length;
-  document.getElementById('taskCountLabel').textContent = `${completed}/${S.tasks.length} completed`;
-  document.getElementById('tasksCompleted').textContent = completed;
-  document.getElementById('tasksTotal').textContent = S.tasks.length;
-  el.innerHTML = S.tasks.map(t => {
-    const expanded = S.selectedTask?.id===t.id;
-    return `
-    <div class="task-item ${expanded?'expanded':''}" data-taskid="${t.id}" onclick="toggleTask('${t.id}')">
-      <div class="task-header">
-        <span class="task-status-dot ${t.status}"></span>
-        <span class="task-title">${t.title}</span>
-        <div class="task-badges">
-          <span class="tbadge cat">${t.category}</span>
-          <span class="tbadge time">~${t.estimated_minutes}m</span>
-          ${t.priority==='high'?'<span class="tbadge prio-high">HIGH</span>':''}
-          ${t.required_tools.map(x=>`<span class="tbadge tool">${x}</span>`).join('')}
-        </div>
-      </div>
-      <div class="task-detail">
-        <div class="task-desc">${t.description}</div>
-        <ul class="step-list">${t.steps.map((s,i)=>`<li><span class="step-check ${s.completed?'done':''}" onclick="event.stopPropagation();toggleStep('${t.id}',${i})">${s.completed?'&#10003;':''}</span>${s.text}</li>`).join('')}</ul>
-        <div id="hints-${t.id}">${t.hints.map(h=>`<div class="hint-box">${h}</div>`).join('')}</div>
-        <div class="task-actions">
-          ${t.status==='pending'?`<button class="btn-sm btn-blue" onclick="event.stopPropagation();updateTaskStatus('${t.id}','in_progress')">Start Task</button>`:''}
-          ${t.status==='in_progress'?`<button class="btn-sm btn-green" onclick="event.stopPropagation();updateTaskStatus('${t.id}','completed')">Mark Complete</button>`:''}
-          <button class="btn-sm btn-yellow" onclick="event.stopPropagation();getHint('${t.id}')">Get Hint</button>
-          <button class="btn-sm btn-ghost" onclick="event.stopPropagation();getHelp('${t.id}')">Get Help</button>
-          ${t.related_email_id?`<button class="btn-sm btn-ghost" onclick="event.stopPropagation();switchPanel('inbox');setTimeout(()=>selectEmail('${t.related_email_id}'),100)">View Email</button>`:''}
-        </div>
-        <div class="submit-area">
-          <textarea id="submit-${t.id}" placeholder="Paste your SQL query, Python code, or written response here..."></textarea>
-          <button class="btn-sm btn-green" onclick="event.stopPropagation();submitTask('${t.id}')">Submit Work</button>
-          <span id="submit-status-${t.id}" style="font-size:12px;margin-left:8px"></span>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-  updateBadges();
-}
-function toggleTask(id) {
-  const t = S.tasks.find(x=>x.id===id);
-  if(S.selectedTask?.id===id) S.selectedTask=null;
-  else S.selectedTask=t;
-  renderTasks();
-  updateActiveTask();
-}
-async function updateTaskStatus(id, status) {
-  await api(`/api/tasks/${id}/status`,'POST',{status});
-  const t=S.tasks.find(x=>x.id===id); if(t)t.status=status;
-  renderTasks(); updateActiveTask();
-}
-async function toggleStep(taskId, idx) {
-  const t=S.tasks.find(x=>x.id===taskId); if(!t)return;
-  t.steps[idx].completed = !t.steps[idx].completed;
-  await api(`/api/tasks/${taskId}/steps`,'POST',{step_index:idx,completed:t.steps[idx].completed});
-  renderTasks();
-}
-async function getHint(id) {
-  const res = await api(`/api/tasks/${id}/hint`);
-  if(res.hint) {
-    const t=S.tasks.find(x=>x.id===id);
-    if(t && !t.hints.includes(res.hint)) t.hints.push(res.hint);
-    renderTasks();
-  } else {
-    alert(res.message || 'No more hints available.');
-  }
-}
-async function getHelp(id) {
-  const res = await api(`/api/help/task/${id}`);
-  document.getElementById('helpPanelText').textContent = res.help || 'No help available.';
-  document.getElementById('rightSidebar').classList.add('active');
-}
-async function submitTask(id) {
-  const ta = document.getElementById('submit-'+id);
-  const work = ta ? ta.value : '';
-  const tool = work.toLowerCase().includes('select') ? 'sql' : 'text';
-  const res = await api(`/api/tasks/${id}/submit`,'POST',{work,tool_used:tool});
-  const st = document.getElementById('submit-status-'+id);
-  if(st) {
-    st.textContent = res.message||'';
-    st.style.color = res.status==='completed'?'var(--green)':'var(--yellow)';
-  }
-  if(res.status==='completed') { const t=S.tasks.find(x=>x.id===id); if(t)t.status='completed'; }
-  renderTasks();
-}
-function updateActiveTask() {
-  const ac = document.getElementById('activeTaskCard');
-  if(!S.selectedTask) { ac.innerHTML='<div style="font-size:13px;color:var(--text3)">No active task selected.</div>'; return; }
-  const t = S.selectedTask;
-  ac.innerHTML=`<div class="active-task-card"><h4>${t.title}</h4><p>Category: ${t.category} | ~${t.estimated_minutes}m<br>Status: ${t.status}<br>Tools: ${t.required_tools.join(', ')}</p></div>`;
-}
-
-// ---------- SQL ----------
-async function loadSchema() {
-  const res = await api('/api/sql/tables');
-  S.tables = res.tables;
-  const el = document.getElementById('schemaRef');
-  if(!S.tables){el.innerHTML='<div style="color:var(--text3);font-size:12px">Failed to load</div>';return;}
-  el.innerHTML = Object.entries(S.tables).map(([name, cols]) =>
-    `<details class="schema-table"><summary>${name}</summary>${cols.map(c=>`<div class="schema-col mono">${c.name} <span style="color:var(--text3)">${c.type}</span></div>`).join('')}</details>`
-  ).join('');
-}
-async function executeSQL() {
-  const query = document.getElementById('sqlEditor').value.trim();
-  if(!query) return;
-  const el = document.getElementById('sqlResult');
-  el.innerHTML = '<div class="loading"><span class="spinner"></span>Executing...</div>';
-  const res = await api('/api/sql/execute','POST',{query});
-  if(res.error) {
-    el.innerHTML = `<div class="sql-error">${res.error}</div>`;
-    document.getElementById('sqlStatus').innerHTML = '';
+  if (!facilityType || !userRole) {
+    showToast('Please select both Facility Type and Role.', 'warning');
     return;
   }
-  S.lastSqlResult = res;
-  S.sqlHistory.unshift(query);
-  renderSqlHistory();
-  document.getElementById('sqlStatus').innerHTML = `<span>${res.row_count} rows</span><span>${res.execution_time_ms}ms</span>`;
-  if(!res.columns.length) { el.innerHTML='<div style="padding:20px;color:var(--text3)">Query executed successfully (no results)</div>'; return; }
-  el.innerHTML = `<table class="sql-table"><thead><tr>${res.columns.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${res.rows.map(r=>`<tr>${r.map(v=>`<td>${v===null?'<span style="color:var(--text3)">NULL</span>':v}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+
+  const config = {
+    facility_type: facilityType,
+    role: userRole,
+    task_count: parseInt(numTasksSlider.value),
+    task_time_target_minutes: parseInt(document.getElementById('task-time').value),
+    shift_duration: parseInt(document.getElementById('shift-duration').value),
+    difficulty: document.querySelector('input[name="difficulty"]:checked').value,
+    assistance_level: document.querySelector('input[name="assistance"]:checked').value,
+    python_enabled: document.getElementById('python-enabled').checked
+  };
+
+  const btn = document.getElementById('btn-start');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Starting...';
+
+  try {
+    const data = await api('/api/scenario/start', 'POST', config);
+    state.scenario = data;
+    state.config = config;
+    startWorkspace(config);
+    showToast('Shift started! Check your inbox for assignments.', 'success');
+  } catch (err) {
+    showToast('Failed to start scenario: ' + err.message, 'error');
+    btn.disabled = false;
+    btn.innerHTML = 'Start Shift \u25b6';
+  }
+});
+
+/* ================================================================
+   WORKSPACE INITIALIZATION
+   ================================================================ */
+function startWorkspace(config) {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('workspace').style.display = 'flex';
+
+  // Set role badge
+  document.getElementById('role-badge').textContent = ROLE_NAMES[config.role] || config.role;
+
+  // Python nav
+  if (config.python_enabled) {
+    document.getElementById('nav-python').classList.remove('hidden');
+  }
+
+  // Shift timer
+  state.shiftDuration = config.shift_duration * 3600;
+  state.shiftStartTime = Date.now();
+  startShiftTimer();
+
+  // Load initial data
+  loadEmails();
+  loadTasks();
+  loadPatients();
+  loadDashboard();
+  populateCommonQueries();
+  populatePythonSnippets();
+  populateHelpContent();
 }
-function renderSqlHistory() {
-  const el = document.getElementById('sqlHistory');
-  if(!S.sqlHistory.length){el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px">No queries yet</div>';return;}
-  el.innerHTML = S.sqlHistory.slice(0,20).map(q=>`<div class="sql-history-item" onclick="document.getElementById('sqlEditor').value=this.textContent">${q}</div>`).join('');
+
+/* ================================================================
+   SHIFT TIMER
+   ================================================================ */
+function startShiftTimer() {
+  updateShiftClock();
+  state.shiftTimerInterval = setInterval(updateShiftClock, 1000);
 }
-function exportCSV() {
-  if(!S.lastSqlResult || !S.lastSqlResult.columns.length) return;
-  const r = S.lastSqlResult;
-  let csv = r.columns.join(',') + '\n';
-  r.rows.forEach(row => { csv += row.map(v => `"${(v===null?'':String(v)).replace(/"/g,'""')}"`).join(',') + '\n'; });
-  const blob = new Blob([csv], {type:'text/csv'});
+
+function updateShiftClock() {
+  const elapsed = (Date.now() - state.shiftStartTime) / 1000;
+  const remaining = Math.max(0, state.shiftDuration - elapsed);
+  const pct = Math.min(100, (elapsed / state.shiftDuration) * 100);
+
+  const clockEl = document.getElementById('shift-clock');
+  clockEl.textContent = formatTime(remaining);
+  clockEl.className = 'shift-clock';
+  if (remaining < 300) clockEl.classList.add('danger');
+  else if (remaining < 900) clockEl.classList.add('warning');
+
+  document.getElementById('shift-progress-bar').style.width = pct + '%';
+
+  if (remaining <= 0) {
+    clearInterval(state.shiftTimerInterval);
+    showToast('Shift time is up!', 'warning', 10000);
+  }
+}
+
+/* ================================================================
+   NAVIGATION
+   ================================================================ */
+function switchPanel(panelName) {
+  state.currentPanel = panelName;
+
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navBtn = document.querySelector(`.nav-item[data-panel="${panelName}"]`);
+  if (navBtn) navBtn.classList.add('active');
+
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById(`panel-${panelName}`);
+  if (panel) panel.classList.add('active');
+}
+
+document.querySelectorAll('.nav-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const panel = btn.dataset.panel;
+    if (panel) switchPanel(panel);
+  });
+});
+
+/* ================================================================
+   INBOX / EMAIL
+   ================================================================ */
+async function loadEmails() {
+  try {
+    const data = await api('/api/emails?filter=' + state.inboxFilter);
+    state.emails = data.emails || [];
+    renderInboxList();
+    updateBadges();
+  } catch (err) {
+    document.getElementById('inbox-items').innerHTML =
+      '<div style="padding:20px;color:var(--color-danger)">Failed to load emails: ' + escapeHtml(err.message) + '</div>';
+  }
+}
+
+function renderInboxList() {
+  const container = document.getElementById('inbox-items');
+  const filtered = state.emails;
+
+  if (!filtered.length) {
+    container.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-muted)">No emails match this filter</div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map(email => `
+    <div class="email-item ${!email.read ? 'unread' : ''} ${state.selectedEmail && state.selectedEmail.id === email.id ? 'active' : ''}"
+         data-email-id="${email.id}" onclick="selectEmail('${email.id}')">
+      <div class="email-priority ${priorityClass(email.priority)}"></div>
+      <div class="email-preview">
+        <div class="email-sender">${escapeHtml(email.from_name)}</div>
+        <div class="email-subject">${escapeHtml(email.subject)}</div>
+      </div>
+      <div class="email-time">${timeAgo(email.timestamp)}</div>
+    </div>
+  `).join('');
+}
+
+async function selectEmail(id) {
+  const email = state.emails.find(e => e.id === id);
+  if (!email) return;
+
+  state.selectedEmail = email;
+
+  // Mark as read
+  if (!email.read) {
+    try {
+      await api(`/api/emails/${id}/read`, 'POST');
+      email.read = true;
+      updateBadges();
+    } catch (e) { /* silent */ }
+  }
+
+  renderEmailDetail();
+  renderInboxList();
+}
+
+function renderEmailDetail() {
+  const el = document.getElementById('email-detail');
+  const email = state.selectedEmail;
+  if (!email) {
+    el.className = 'email-detail-empty';
+    el.innerHTML = 'Select an email to read';
+    return;
+  }
+
+  el.className = 'email-detail';
+  el.innerHTML = `
+    <div class="email-detail-header">
+      <div class="email-detail-subject">${escapeHtml(email.subject)}</div>
+      <dl class="email-meta">
+        <dt>From</dt><dd>${escapeHtml(email.from_name)} &lt;${escapeHtml(email.from_email)}&gt;</dd>
+        <dt>To</dt><dd>You</dd>
+        <dt>Time</dt><dd>${timeAgo(email.timestamp)}</dd>
+        <dt>Priority</dt><dd><span class="badge badge-priority-${priorityClass(email.priority)}">${escapeHtml(email.priority || 'Normal')}</span></dd>
+      </dl>
+    </div>
+    <div class="email-body">${escapeHtml(email.body)}</div>
+    ${email.related_task_id ? `<div class="task-related-email" onclick="goToTask('${email.related_task_id}')">&#128203; View Related Task</div>` : ''}
+    <div class="email-reply">
+      <textarea id="email-reply-text" placeholder="Type your reply..."></textarea>
+      <button class="btn-reply" onclick="replyToEmail('${email.id}')">Reply</button>
+    </div>
+  `;
+}
+
+function goToTask(taskId) {
+  switchPanel('tasks');
+  selectTask(taskId);
+}
+
+async function replyToEmail(id) {
+  const text = document.getElementById('email-reply-text').value.trim();
+  if (!text) { showToast('Please write a reply first.', 'warning'); return; }
+
+  try {
+    const res = await api(`/api/emails/${id}/reply`, 'POST', { reply: text });
+    showToast('Reply sent!', 'success');
+    document.getElementById('email-reply-text').value = '';
+    if (res.auto_response) {
+      addNotification('Email Reply', res.auto_response.substring(0, 100));
+    }
+  } catch (err) {
+    showToast('Failed to send reply: ' + err.message, 'error');
+  }
+}
+
+// Inbox filter tabs
+document.querySelectorAll('.inbox-filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.inbox-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.inboxFilter = btn.dataset.filter;
+    loadEmails();
+  });
+});
+
+/* ================================================================
+   TASKS
+   ================================================================ */
+async function loadTasks() {
+  try {
+    const data = await api('/api/tasks');
+    state.tasks = data.tasks || [];
+    renderTasksList();
+    updateBadges();
+    updateTaskProgress();
+  } catch (err) {
+    document.getElementById('tasks-list').innerHTML =
+      '<div style="padding:20px;color:var(--color-danger)">Failed to load tasks: ' + escapeHtml(err.message) + '</div>';
+  }
+}
+
+function renderTasksList() {
+  const container = document.getElementById('tasks-list');
+  if (!state.tasks.length) {
+    container.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-muted)">No tasks assigned yet</div>';
+    return;
+  }
+
+  container.innerHTML = state.tasks.map(task => {
+    const statusClass = task.status === 'completed' ? 'completed' : task.status === 'in_progress' ? 'in-progress' : 'pending';
+    return `
+      <div class="task-card ${state.selectedTask && state.selectedTask.id === task.id ? 'active' : ''}"
+           data-task-id="${task.id}" onclick="selectTask('${task.id}')">
+        <div class="task-card-header">
+          <span class="task-status-dot ${statusClass}"></span>
+          <span class="task-title">${escapeHtml(task.title)}</span>
+        </div>
+        <div class="task-badges">
+          ${task.category ? `<span class="badge badge-category">${escapeHtml(task.category)}</span>` : ''}
+          ${task.estimated_minutes ? `<span class="badge badge-time">~${task.estimated_minutes} min</span>` : ''}
+          ${task.priority ? `<span class="badge badge-priority-${priorityClass(task.priority)}">${escapeHtml(task.priority)}</span>` : ''}
+          ${(task.required_tools||[]).map(t => `<span class="badge badge-tools">${escapeHtml(t)}</span>`).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function selectTask(id) {
+  const task = state.tasks.find(t => t.id === id);
+  if (!task) return;
+
+  state.selectedTask = task;
+  renderTasksList();
+  renderTaskDetail();
+  updateRightSidebar();
+
+  // Mark as in_progress if pending
+  if (task.status === 'pending') {
+    try {
+      await api(`/api/tasks/${id}/status`, 'POST', { status: 'in_progress' });
+      task.status = 'in_progress';
+      renderTasksList();
+      updateTaskProgress();
+    } catch (e) { /* silent */ }
+  }
+}
+
+function renderTaskDetail() {
+  const el = document.getElementById('task-detail');
+  const task = state.selectedTask;
+  if (!task) {
+    el.className = 'task-detail-empty';
+    el.innerHTML = 'Select a task to view details';
+    return;
+  }
+
+  el.className = 'task-detail';
+  const steps = task.steps || [];
+
+  el.innerHTML = `
+    <div class="task-detail-title">${escapeHtml(task.title)}</div>
+    <div class="task-badges" style="margin-bottom:16px">
+      ${task.category ? `<span class="badge badge-category">${escapeHtml(task.category)}</span>` : ''}
+      ${task.estimated_minutes ? `<span class="badge badge-time">~${task.estimated_minutes} min</span>` : ''}
+      ${task.priority ? `<span class="badge badge-priority-${priorityClass(task.priority)}">${escapeHtml(task.priority)}</span>` : ''}
+    </div>
+    <div class="task-description">${escapeHtml(task.description)}</div>
+    ${task.related_email_id ? `<div class="task-related-email" onclick="goToEmail('${task.related_email_id}')">&#128231; View Related Email</div>` : ''}
+    ${steps.length ? `
+      <div class="step-checklist">
+        <h4>Steps</h4>
+        ${steps.map((step, i) => `
+          <div class="step-item ${step.completed ? 'checked' : ''}">
+            <input type="checkbox" ${step.completed ? 'checked' : ''} onchange="toggleStep('${task.id}', ${i}, this.checked)">
+            <span>${escapeHtml(step.text || step)}</span>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+    <div class="task-actions">
+      <button class="btn-get-hint" onclick="getHint('${task.id}')">Get Hint</button>
+    </div>
+    <div id="hint-display-${task.id}">
+      ${(task.hints||[]).map(h => `<div class="hint-display">${escapeHtml(h)}</div>`).join('')}
+    </div>
+    ${task.status !== 'completed' ? `
+    <div class="task-submit">
+      <h4>Submit Work</h4>
+      <textarea id="task-work-${task.id}" placeholder="Paste your SQL query, findings, or response here...">${escapeHtml(task._work || '')}</textarea>
+      <div style="display:flex;gap:10px;align-items:center">
+        <select id="tool-used-${task.id}" style="padding:8px;background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm)">
+          <option value="">Tool used...</option>
+          <option value="sql">SQL Console</option>
+          <option value="python">Python</option>
+          <option value="ehr">EHR Review</option>
+          <option value="dashboard">Dashboard</option>
+          <option value="manual">Manual Analysis</option>
+        </select>
+        <button class="btn-submit-work" onclick="submitWork('${task.id}')">Submit Work</button>
+      </div>
+    </div>` : '<div style="padding:16px;background:rgba(63,185,80,0.1);border:1px solid rgba(63,185,80,0.3);border-radius:var(--radius-sm);color:var(--color-success);font-weight:600;margin-top:16px">&#10003; Task Completed</div>'}
+  `;
+}
+
+function goToEmail(emailId) {
+  switchPanel('inbox');
+  selectEmail(emailId);
+}
+
+async function toggleStep(taskId, stepIndex, checked) {
+  const task = state.tasks.find(t => t.id === taskId);
+  if (!task) return;
+  if (task.steps && task.steps[stepIndex]) {
+    task.steps[stepIndex].completed = checked;
+  }
+  try {
+    await api(`/api/tasks/${taskId}/steps`, 'POST', { step_index: stepIndex, completed: checked });
+  } catch (e) { /* silent */ }
+  updateRightSidebar();
+}
+
+async function getHint(taskId) {
+  try {
+    const data = await api(`/api/tasks/${taskId}/hint`);
+    const el = document.getElementById(`hint-display-${taskId}`);
+    if (data.hint) {
+      if (el) el.innerHTML += `<div class="hint-display">${escapeHtml(data.hint)}</div>`;
+      const task = state.tasks.find(t => t.id === taskId);
+      if (task && task.hints && !task.hints.includes(data.hint)) task.hints.push(data.hint);
+      showToast(`Hint revealed (${data.hints_remaining} remaining)`, 'info');
+    } else {
+      showToast(data.message || 'No more hints available.', 'info');
+    }
+    updateRightSidebar();
+  } catch (err) {
+    showToast('Failed to get hint: ' + err.message, 'error');
+  }
+}
+
+async function submitWork(taskId) {
+  const textarea = document.getElementById(`task-work-${taskId}`);
+  const toolSelect = document.getElementById(`tool-used-${taskId}`);
+  const work = textarea ? textarea.value.trim() : '';
+  const tool = toolSelect ? toolSelect.value : '';
+  if (!work) { showToast('Please enter your work before submitting.', 'warning'); return; }
+
+  const task = state.tasks.find(t => t.id === taskId);
+  if (task) task._work = work;
+
+  try {
+    const data = await api(`/api/tasks/${taskId}/submit`, 'POST', { work, tool_used: tool });
+    showToast(data.message || 'Work submitted!', data.status === 'completed' ? 'success' : 'warning');
+
+    if (data.status === 'completed') {
+      if (task) task.status = 'completed';
+      renderTasksList();
+      renderTaskDetail();
+      updateTaskProgress();
+      addNotification('Task Completed', `"${task.title}" has been reviewed and accepted.`);
+    }
+  } catch (err) {
+    showToast('Failed to submit: ' + err.message, 'error');
+  }
+}
+
+function updateTaskProgress() {
+  const completed = state.tasks.filter(t => t.status === 'completed').length;
+  const total = state.tasks.length;
+  document.getElementById('tasks-completed').textContent = completed;
+  document.getElementById('tasks-total').textContent = total;
+}
+
+/* ================================================================
+   EHR / PATIENT RECORDS
+   ================================================================ */
+async function loadPatients(search) {
+  try {
+    const q = search || '';
+    const data = await api(`/api/ehr/patients?search=${encodeURIComponent(q)}&per_page=50`);
+    state.patients = data.patients || [];
+    renderPatientList();
+  } catch (err) {
+    document.getElementById('patient-list').innerHTML =
+      '<div style="padding:20px;color:var(--color-danger)">Failed to load patients: ' + escapeHtml(err.message) + '</div>';
+  }
+}
+
+function renderPatientList() {
+  const list = state.patients;
+  const container = document.getElementById('patient-list');
+
+  if (!list.length) {
+    container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No patients found</div>';
+    return;
+  }
+
+  container.innerHTML = list.map(p => `
+    <div class="patient-item ${state.selectedPatientMrn === p.mrn ? 'active' : ''}"
+         onclick="selectPatient('${escapeHtml(p.mrn)}')">
+      <span class="patient-mrn">${escapeHtml(p.mrn)}</span>
+      <span class="patient-name">${escapeHtml(p.last_name)}, ${escapeHtml(p.first_name)}</span>
+      <span class="patient-info-brief">${escapeHtml(p.gender)} &middot; ${escapeHtml(p.dob)}</span>
+    </div>
+  `).join('');
+}
+
+// EHR search
+let ehrSearchTimeout;
+document.getElementById('ehr-search-input').addEventListener('input', (e) => {
+  clearTimeout(ehrSearchTimeout);
+  ehrSearchTimeout = setTimeout(() => loadPatients(e.target.value.trim()), 300);
+});
+
+async function selectPatient(mrn) {
+  state.selectedPatientMrn = mrn;
+  renderPatientList();
+  try {
+    const data = await api(`/api/ehr/patients/${mrn}`);
+    state.patientCache = data;
+    renderPatientDetail();
+  } catch (err) {
+    showToast('Failed to load patient: ' + err.message, 'error');
+  }
+}
+
+function renderPatientDetail() {
+  const el = document.getElementById('ehr-detail');
+  const data = state.patientCache;
+  if (!data || !data.patient) {
+    el.innerHTML = '<div class="ehr-detail-empty">Search and select a patient to view records</div>';
+    return;
+  }
+  const p = data.patient;
+
+  el.innerHTML = `
+    <div class="patient-demographics">
+      <h3>&#127973; ${escapeHtml(p.last_name)}, ${escapeHtml(p.first_name)}</h3>
+      <div class="demo-grid">
+        <div class="demo-item"><label>MRN</label><span>${escapeHtml(p.mrn)}</span></div>
+        <div class="demo-item"><label>DOB</label><span>${escapeHtml(p.dob)}</span></div>
+        <div class="demo-item"><label>Gender</label><span>${escapeHtml(p.gender)}</span></div>
+        <div class="demo-item"><label>Language</label><span>${escapeHtml(p.primary_language || 'English')}</span></div>
+        <div class="demo-item"><label>Phone</label><span>${escapeHtml(p.phone || 'N/A')}</span></div>
+        <div class="demo-item"><label>Insurance</label><span>${escapeHtml(p.insurance_plan || 'N/A')}</span></div>
+        <div class="demo-item"><label>Email</label><span>${escapeHtml(p.email || 'N/A')}</span></div>
+        <div class="demo-item"><label>Address</label><span>${escapeHtml(p.address || '')}, ${escapeHtml(p.city || '')} ${escapeHtml(p.state || '')} ${escapeHtml(p.zip || '')}</span></div>
+      </div>
+    </div>
+    <div class="ehr-tabs" id="ehr-tabs">
+      <button class="ehr-tab ${state.ehrTab === 'encounters' ? 'active' : ''}" data-tab="encounters">Encounters (${(data.encounters||[]).length})</button>
+      <button class="ehr-tab ${state.ehrTab === 'diagnoses' ? 'active' : ''}" data-tab="diagnoses">Diagnoses (${(data.diagnoses||[]).length})</button>
+      <button class="ehr-tab ${state.ehrTab === 'medications' ? 'active' : ''}" data-tab="medications">Medications (${(data.medications||[]).length})</button>
+      <button class="ehr-tab ${state.ehrTab === 'labs' ? 'active' : ''}" data-tab="labs">Labs (${(data.lab_results||[]).length})</button>
+      <button class="ehr-tab ${state.ehrTab === 'allergies' ? 'active' : ''}" data-tab="allergies">Allergies (${(data.allergies||[]).length})</button>
+      <button class="ehr-tab ${state.ehrTab === 'vitals' ? 'active' : ''}" data-tab="vitals">Vitals (${(data.vitals||[]).length})</button>
+    </div>
+    <div class="ehr-tab-content" id="ehr-tab-content"></div>
+  `;
+
+  // Bind tab clicks
+  el.querySelectorAll('.ehr-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      state.ehrTab = tab.dataset.tab;
+      el.querySelectorAll('.ehr-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      renderPatientTab();
+    });
+  });
+
+  renderPatientTab();
+}
+
+function renderPatientTab() {
+  const content = document.getElementById('ehr-tab-content');
+  const data = state.patientCache;
+  if (!data) return;
+  const tab = state.ehrTab;
+
+  if (tab === 'encounters') {
+    const records = data.encounters || [];
+    if (!records.length) { content.innerHTML = '<div style="padding:20px;color:var(--text-muted)">No encounters</div>'; return; }
+    content.innerHTML = `<div class="data-table-wrap"><table class="data-table">
+      <thead><tr><th>ID</th><th>Type</th><th>Admitted</th><th>Discharged</th><th>Department</th><th>Provider</th><th>Status</th><th>LOS</th></tr></thead>
+      <tbody>${records.map(r => `<tr>
+        <td>${r.encounter_id}</td>
+        <td>${escapeHtml(r.encounter_type || '')}</td>
+        <td>${escapeHtml(r.admission_date || '')}</td>
+        <td>${escapeHtml(r.discharge_date || '&#8212;')}</td>
+        <td>${escapeHtml(r.dept_name || '')}</td>
+        <td>${escapeHtml(r.provider_name || '')}</td>
+        <td><span class="status-${r.status === 'open' ? 'active' : 'discharged'}">${escapeHtml(r.status || '')}</span></td>
+        <td>${r.los_days != null ? r.los_days : '&#8212;'}</td>
+      </tr>`).join('')}</tbody></table></div>`;
+  } else if (tab === 'diagnoses') {
+    const records = data.diagnoses || [];
+    if (!records.length) { content.innerHTML = '<div style="padding:20px;color:var(--text-muted)">No diagnoses</div>'; return; }
+    content.innerHTML = `<div class="data-table-wrap"><table class="data-table">
+      <thead><tr><th>ICD-10</th><th>Description</th><th>Type</th><th>Date</th><th>Status</th></tr></thead>
+      <tbody>${records.map(r => `<tr>
+        <td><code>${escapeHtml(r.icd10_code)}</code></td>
+        <td>${escapeHtml(r.description || '')}</td>
+        <td>${escapeHtml(r.diagnosis_type || '')}</td>
+        <td>${escapeHtml(r.diagnosed_date || '')}</td>
+        <td>${escapeHtml(r.status || '')}</td>
+      </tr>`).join('')}</tbody></table></div>`;
+  } else if (tab === 'medications') {
+    const records = data.medications || [];
+    if (!records.length) { content.innerHTML = '<div style="padding:20px;color:var(--text-muted)">No medications</div>'; return; }
+    content.innerHTML = `<div class="data-table-wrap"><table class="data-table">
+      <thead><tr><th>Medication</th><th>Dosage</th><th>Route</th><th>Frequency</th><th>Start</th><th>End</th><th>Status</th></tr></thead>
+      <tbody>${records.map(r => `<tr>
+        <td>${escapeHtml(r.medication_name)}</td>
+        <td>${escapeHtml(r.dosage || '')}</td>
+        <td>${escapeHtml(r.route || '')}</td>
+        <td>${escapeHtml(r.frequency || '')}</td>
+        <td>${escapeHtml(r.start_date || '')}</td>
+        <td>${escapeHtml(r.end_date || '&#8212;')}</td>
+        <td class="status-${r.status === 'active' ? 'active' : 'discharged'}">${escapeHtml(r.status || '')}</td>
+      </tr>`).join('')}</tbody></table></div>`;
+  } else if (tab === 'labs') {
+    const records = data.lab_results || [];
+    if (!records.length) { content.innerHTML = '<div style="padding:20px;color:var(--text-muted)">No lab results</div>'; return; }
+    content.innerHTML = `<div class="data-table-wrap"><table class="data-table">
+      <thead><tr><th>Test</th><th>Result</th><th>Unit</th><th>Range</th><th>Flag</th><th>Collected</th><th>Status</th></tr></thead>
+      <tbody>${records.map(r => {
+        const cls = r.abnormal_flag === 'C' ? 'critical' : (r.abnormal_flag === 'H' || r.abnormal_flag === 'L') ? 'abnormal' : '';
+        return `<tr>
+          <td>${escapeHtml(r.test_name)}</td>
+          <td class="${cls}">${escapeHtml(r.result_value || '')}</td>
+          <td>${escapeHtml(r.result_unit || '')}</td>
+          <td>${r.reference_range_low != null && r.reference_range_high != null ? r.reference_range_low + ' - ' + r.reference_range_high : '&#8212;'}</td>
+          <td class="${cls}">${escapeHtml(r.abnormal_flag || 'N')}</td>
+          <td>${escapeHtml(r.collected_datetime || '')}</td>
+          <td>${escapeHtml(r.status || '')}</td>
+        </tr>`;
+      }).join('')}</tbody></table></div>`;
+  } else if (tab === 'allergies') {
+    const records = data.allergies || [];
+    if (!records.length) { content.innerHTML = '<div style="padding:20px;color:var(--text-muted)">No allergies recorded</div>'; return; }
+    content.innerHTML = `<div class="data-table-wrap"><table class="data-table">
+      <thead><tr><th>Allergen</th><th>Type</th><th>Reaction</th><th>Severity</th><th>Reported</th><th>Status</th></tr></thead>
+      <tbody>${records.map(r => `<tr>
+        <td>${escapeHtml(r.allergen)}</td>
+        <td>${escapeHtml(r.allergy_type || '')}</td>
+        <td>${escapeHtml(r.reaction || '')}</td>
+        <td class="${r.severity === 'Severe' ? 'abnormal' : ''}">${escapeHtml(r.severity || '')}</td>
+        <td>${escapeHtml(r.reported_date || '')}</td>
+        <td>${escapeHtml(r.status || '')}</td>
+      </tr>`).join('')}</tbody></table></div>`;
+  } else if (tab === 'vitals') {
+    const records = data.vitals || [];
+    if (!records.length) { content.innerHTML = '<div style="padding:20px;color:var(--text-muted)">No vital signs</div>'; return; }
+    content.innerHTML = `<div class="data-table-wrap"><table class="data-table">
+      <thead><tr><th>Recorded</th><th>Temp (&deg;F)</th><th>HR</th><th>BP</th><th>RR</th><th>SpO2</th><th>BMI</th></tr></thead>
+      <tbody>${records.map(r => `<tr>
+        <td>${escapeHtml(r.recorded_datetime || '')}</td>
+        <td>${r.temperature != null ? r.temperature : '&#8212;'}</td>
+        <td>${r.heart_rate != null ? r.heart_rate : '&#8212;'}</td>
+        <td>${r.systolic_bp != null && r.diastolic_bp != null ? r.systolic_bp + '/' + r.diastolic_bp : '&#8212;'}</td>
+        <td>${r.respiratory_rate != null ? r.respiratory_rate : '&#8212;'}</td>
+        <td>${r.spo2 != null ? r.spo2 + '%' : '&#8212;'}</td>
+        <td>${r.bmi != null ? r.bmi : '&#8212;'}</td>
+      </tr>`).join('')}</tbody></table></div>`;
+  }
+}
+
+/* ================================================================
+   SQL CONSOLE
+   ================================================================ */
+const sqlEditor = document.getElementById('sql-editor');
+const sqlLineNumbers = document.getElementById('sql-line-numbers');
+
+function updateSqlLineNumbers() {
+  const lines = sqlEditor.value.split('\n').length;
+  sqlLineNumbers.textContent = Array.from({ length: lines }, (_, i) => i + 1).join('\n');
+}
+
+sqlEditor.addEventListener('input', updateSqlLineNumbers);
+sqlEditor.addEventListener('scroll', () => {
+  sqlLineNumbers.scrollTop = sqlEditor.scrollTop;
+});
+updateSqlLineNumbers();
+
+// Ctrl+Enter to execute
+sqlEditor.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'Enter') {
+    e.preventDefault();
+    executeSQL();
+  }
+  // Tab to indent
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const start = sqlEditor.selectionStart;
+    const end = sqlEditor.selectionEnd;
+    sqlEditor.value = sqlEditor.value.substring(0, start) + '  ' + sqlEditor.value.substring(end);
+    sqlEditor.selectionStart = sqlEditor.selectionEnd = start + 2;
+    updateSqlLineNumbers();
+  }
+});
+
+document.getElementById('btn-sql-execute').addEventListener('click', executeSQL);
+document.getElementById('btn-sql-clear').addEventListener('click', () => {
+  sqlEditor.value = '';
+  updateSqlLineNumbers();
+  sqlEditor.focus();
+});
+
+async function executeSQL() {
+  const query = sqlEditor.value.trim();
+  if (!query) { showToast('Enter a query first.', 'warning'); return; }
+
+  const btn = document.getElementById('btn-sql-execute');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Running...';
+
+  const startTime = performance.now();
+
+  try {
+    const data = await api('/api/sql/execute', 'POST', { query });
+    const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+
+    // Add to history
+    state.sqlHistory.unshift({ query, time: new Date().toISOString(), rows: data.row_count || 0 });
+    if (state.sqlHistory.length > 50) state.sqlHistory.pop();
+    renderSqlHistory();
+
+    state.sqlLastResults = data;
+    const rowCount = data.row_count || 0;
+    document.getElementById('sql-row-count').textContent = `${rowCount} row${rowCount !== 1 ? 's' : ''}`;
+    document.getElementById('sql-exec-time').textContent = `${data.execution_time_ms || 0}ms`;
+    document.getElementById('btn-export-csv').classList.remove('hidden');
+
+    if (data.columns && data.columns.length) {
+      let tableHtml = '<div class="data-table-wrap"><table class="data-table"><thead><tr>';
+      data.columns.forEach(col => { tableHtml += `<th>${escapeHtml(col)}</th>`; });
+      tableHtml += '</tr></thead><tbody>';
+      data.rows.forEach(row => {
+        tableHtml += '<tr>';
+        row.forEach(val => { tableHtml += `<td>${val === null ? '<em style="color:var(--text-muted)">NULL</em>' : escapeHtml(String(val))}</td>`; });
+        tableHtml += '</tr>';
+      });
+      tableHtml += '</tbody></table></div>';
+      document.getElementById('sql-results-body').innerHTML = tableHtml;
+    } else {
+      document.getElementById('sql-results-body').innerHTML = '<div class="sql-empty">Query executed, no rows returned</div>';
+      document.getElementById('btn-export-csv').classList.add('hidden');
+    }
+  } catch (err) {
+    document.getElementById('sql-results-body').innerHTML = `<div class="sql-error">${escapeHtml(err.message)}</div>`;
+    document.getElementById('sql-row-count').textContent = 'Error';
+    document.getElementById('sql-exec-time').textContent = '';
+    document.getElementById('btn-export-csv').classList.add('hidden');
+    state.sqlLastResults = null;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Execute \u25b6';
+  }
+}
+
+// Export CSV
+document.getElementById('btn-export-csv').addEventListener('click', () => {
+  if (!state.sqlLastResults) return;
+  const { columns, rows } = state.sqlLastResults;
+  let csv = columns.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',') + '\n';
+  rows.forEach(row => {
+    csv += row.map(v => '"' + String(v === null ? '' : v).replace(/"/g, '""') + '"').join(',') + '\n';
+  });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  a.href = url;
   a.download = 'query_results.csv';
   a.click();
-}
-
-// SQL keyboard shortcut
-document.getElementById('sqlEditor').addEventListener('keydown', e => {
-  if(e.ctrlKey && e.key==='Enter') { e.preventDefault(); executeSQL(); }
+  URL.revokeObjectURL(url);
+  showToast('CSV exported!', 'success');
 });
 
-// ---------- PYTHON ----------
-async function executePython() {
-  const code = document.getElementById('pyEditor').value.trim();
-  if(!code) return;
-  const el = document.getElementById('pyOutput');
-  el.textContent = 'Running...';
-  el.style.color = 'var(--text2)';
-  const res = await api('/api/python/execute','POST',{code});
-  if(res.error && !res.output) {
-    el.textContent = 'Error: ' + res.error;
-    el.style.color = 'var(--red)';
-  } else {
-    el.textContent = (res.output||'') + (res.error ? '\nStderr: '+res.error : '');
-    el.style.color = res.returncode===0 ? 'var(--text)' : 'var(--yellow)';
-  }
-}
-document.getElementById('pyEditor').addEventListener('keydown', e => {
-  if(e.ctrlKey && e.key==='Enter') { e.preventDefault(); executePython(); }
+// SQL History panel
+document.getElementById('btn-sql-history').addEventListener('click', () => {
+  state.sqlHistoryOpen = !state.sqlHistoryOpen;
+  document.getElementById('sql-history-panel').classList.toggle('open', state.sqlHistoryOpen);
+});
+document.getElementById('btn-close-history').addEventListener('click', () => {
+  state.sqlHistoryOpen = false;
+  document.getElementById('sql-history-panel').classList.remove('open');
 });
 
-// ---------- EHR ----------
-async function searchPatients(page) {
-  S.ehrPage = page || 1;
-  const search = document.getElementById('ehrSearch').value;
-  const res = await api(`/api/ehr/patients?search=${encodeURIComponent(search)}&page=${S.ehrPage}&per_page=20`);
-  const el = document.getElementById('patientList');
-  document.getElementById('patientDetail').classList.remove('active');
-  document.getElementById('patientDetail').innerHTML='';
-  if(!res.patients.length){el.innerHTML='<div style="padding:16px;color:var(--text3)">No patients found</div>';return;}
-  el.innerHTML = `<div class="patient-row" style="font-weight:700;color:var(--text2);font-size:12px"><span>MRN</span><span>Name</span><span>DOB</span><span>Gender</span></div>`
-    + res.patients.map(p=>`<div class="patient-row" onclick="loadPatient('${p.mrn}')"><span style="color:var(--teal)">${p.mrn}</span><span>${p.last_name}, ${p.first_name}</span><span>${p.dob}</span><span>${p.gender}</span></div>`).join('');
-  // Pager
-  const pages = Math.ceil(res.total/20);
-  const pg = document.getElementById('patientPager');
-  pg.innerHTML = '';
-  if(pages > 1) {
-    for(let i=1;i<=Math.min(pages,10);i++) pg.innerHTML += `<button class="btn-sm ${i===S.ehrPage?'btn-blue':'btn-ghost'}" onclick="searchPatients(${i})">${i}</button>`;
+function renderSqlHistory() {
+  const container = document.getElementById('sql-history-list');
+  if (!state.sqlHistory.length) {
+    container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.8rem">No queries yet</div>';
+    return;
   }
-}
-async function loadPatient(mrn) {
-  const res = await api(`/api/ehr/patients/${mrn}`);
-  if(res.error) return;
-  const p = res.patient;
-  const det = document.getElementById('patientDetail');
-  det.classList.add('active');
-  det.innerHTML = `
-    <div class="card" style="margin-top:12px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h3 style="color:var(--teal)">${p.last_name}, ${p.first_name} (${p.mrn})</h3>
-        <button class="btn-sm btn-ghost" onclick="this.closest('.patient-detail').classList.remove('active')">Close</button>
-      </div>
-      <div class="patient-demo">
-        <div class="field"><div class="field-label">Date of Birth</div>${p.dob}</div>
-        <div class="field"><div class="field-label">Gender</div>${p.gender}</div>
-        <div class="field"><div class="field-label">Race</div>${p.race||'N/A'}</div>
-        <div class="field"><div class="field-label">Phone</div>${p.phone||'N/A'}</div>
-        <div class="field"><div class="field-label">Address</div>${p.address||''}, ${p.city||''} ${p.state||''} ${p.zip||''}</div>
-        <div class="field"><div class="field-label">Status</div>${p.status||'active'}</div>
-      </div>
-      <div class="tab-bar">
-        <button class="tab-btn active" onclick="showTab(this,'enc-${p.id}')">Encounters (${res.encounters.length})</button>
-        <button class="tab-btn" onclick="showTab(this,'dx-${p.id}')">Diagnoses (${res.diagnoses.length})</button>
-        <button class="tab-btn" onclick="showTab(this,'med-${p.id}')">Medications (${res.medications.length})</button>
-        <button class="tab-btn" onclick="showTab(this,'lab-${p.id}')">Labs (${res.lab_results.length})</button>
-        <button class="tab-btn" onclick="showTab(this,'allergy-${p.id}')">Allergies (${res.allergies.length})</button>
-        <button class="tab-btn" onclick="showTab(this,'vitals-${p.id}')">Vitals (${res.vitals.length})</button>
-      </div>
-      <div class="tab-content active" id="enc-${p.id}">
-        <table class="data-table"><thead><tr><th>ID</th><th>Type</th><th>Admit</th><th>Discharge</th><th>Dept</th><th>Provider</th><th>Status</th></tr></thead><tbody>
-        ${res.encounters.map(e=>`<tr><td>${e.id}</td><td>${e.encounter_type}</td><td>${e.admit_date||''}</td><td>${e.discharge_date||'<i>active</i>'}</td><td>${e.dept_name||''}</td><td>${e.provider_name||''}</td><td>${e.status}</td></tr>`).join('')}
-        </tbody></table>
-      </div>
-      <div class="tab-content" id="dx-${p.id}">
-        <table class="data-table"><thead><tr><th>ICD-10</th><th>Description</th><th>Type</th><th>Date</th></tr></thead><tbody>
-        ${res.diagnoses.map(d=>`<tr><td>${d.icd10_code}</td><td>${d.description}</td><td>${d.diagnosis_type}</td><td>${d.diagnosis_date||''}</td></tr>`).join('')}
-        </tbody></table>
-      </div>
-      <div class="tab-content" id="med-${p.id}">
-        <table class="data-table"><thead><tr><th>Medication</th><th>Dose</th><th>Route</th><th>Frequency</th><th>Status</th><th>Start</th></tr></thead><tbody>
-        ${res.medications.map(m=>`<tr><td>${m.med_name||''}</td><td>${m.dose} ${m.unit||''}</td><td>${m.route}</td><td>${m.frequency}</td><td>${m.status}</td><td>${m.start_date||''}</td></tr>`).join('')}
-        </tbody></table>
-      </div>
-      <div class="tab-content" id="lab-${p.id}">
-        <table class="data-table"><thead><tr><th>Test</th><th>Value</th><th>Unit</th><th>Range</th><th>Flag</th><th>Date</th></tr></thead><tbody>
-        ${res.lab_results.map(l=>`<tr><td>${l.test_name}</td><td class="${l.abnormal_flag&&l.abnormal_flag!=='N'?'abnormal':''}">${l.value}</td><td>${l.unit||''}</td><td>${l.reference_range_low||''}-${l.reference_range_high||''}</td><td class="${l.abnormal_flag==='C'?'abnormal':''}">${l.abnormal_flag||'N'}</td><td>${l.result_date||''}</td></tr>`).join('')}
-        </tbody></table>
-      </div>
-      <div class="tab-content" id="allergy-${p.id}">
-        <table class="data-table"><thead><tr><th>Allergen</th><th>Type</th><th>Reaction</th><th>Severity</th></tr></thead><tbody>
-        ${res.allergies.map(a=>`<tr><td>${a.allergen}</td><td>${a.allergy_type||''}</td><td>${a.reaction||''}</td><td class="${a.severity==='severe'?'abnormal':''}">${a.severity||''}</td></tr>`).join('')}
-        </tbody></table>
-      </div>
-      <div class="tab-content" id="vitals-${p.id}">
-        <table class="data-table"><thead><tr><th>Date</th><th>Temp</th><th>HR</th><th>BP</th><th>RR</th><th>SpO2</th><th>Pain</th></tr></thead><tbody>
-        ${res.vitals.map(v=>`<tr><td>${v.recorded_at||''}</td><td>${v.temperature||''}</td><td>${v.heart_rate||''}</td><td>${v.blood_pressure_systolic||''}/${v.blood_pressure_diastolic||''}</td><td>${v.respiratory_rate||''}</td><td>${v.spo2||''}</td><td>${v.pain_scale!==null?v.pain_scale:''}</td></tr>`).join('')}
-        </tbody></table>
-      </div>
-    </div>`;
-}
-function showTab(btn, tabId) {
-  const card = btn.closest('.card');
-  card.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  card.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
-  document.getElementById(tabId).classList.add('active');
+  container.innerHTML = state.sqlHistory.map((h, i) => `
+    <div class="sql-history-item" onclick="loadHistoryQuery(${i})">
+      <code>${escapeHtml(h.query.substring(0, 80))}${h.query.length > 80 ? '...' : ''}</code>
+      <div class="history-time">${h.rows} rows &middot; ${timeAgo(h.time)}</div>
+    </div>
+  `).join('');
 }
 
-// ---------- DASHBOARD ----------
+function loadHistoryQuery(index) {
+  const h = state.sqlHistory[index];
+  if (h) {
+    sqlEditor.value = h.query;
+    updateSqlLineNumbers();
+    state.sqlHistoryOpen = false;
+    document.getElementById('sql-history-panel').classList.remove('open');
+    sqlEditor.focus();
+  }
+}
+
+function populateCommonQueries() {
+  const queries = [
+    { title: 'All Patients', sql: 'SELECT mrn, first_name, last_name, dob, gender FROM patients LIMIT 20;' },
+    { title: 'Active Encounters', sql: "SELECT e.encounter_id, p.first_name, p.last_name, e.encounter_type, e.admission_date, d.dept_name\nFROM encounters e\nJOIN patients p ON e.patient_mrn = p.mrn\nJOIN departments d ON e.department_id = d.dept_id\nWHERE e.status = 'open'\nORDER BY e.admission_date DESC;" },
+    { title: 'Critical Lab Results', sql: "SELECT lr.test_name, lr.result_value, lr.result_unit, lr.abnormal_flag,\n       p.first_name, p.last_name, lr.collected_datetime\nFROM lab_results lr\nJOIN patients p ON lr.patient_mrn = p.mrn\nWHERE lr.abnormal_flag = 'C'\nORDER BY lr.collected_datetime DESC\nLIMIT 20;" },
+    { title: 'Department Census', sql: "SELECT d.dept_name, COUNT(e.encounter_id) as active_patients\nFROM departments d\nLEFT JOIN encounters e ON d.dept_id = e.department_id AND e.status = 'open'\nGROUP BY d.dept_id\nORDER BY active_patients DESC;" },
+    { title: 'Top Medications', sql: "SELECT medication_name, COUNT(*) as times_prescribed\nFROM medications\nGROUP BY medication_name\nORDER BY times_prescribed DESC\nLIMIT 15;" },
+    { title: 'Recent Audit Log', sql: "SELECT al.*, u.full_name FROM audit_log al\nLEFT JOIN users u ON al.user_id = u.user_id\nORDER BY al.timestamp DESC LIMIT 20;" },
+    { title: 'HL7 Errors', sql: "SELECT * FROM hl7_messages WHERE status = 'error'\nORDER BY message_datetime DESC LIMIT 20;" },
+    { title: 'System Alerts', sql: "SELECT * FROM system_alerts\nWHERE acknowledged = 0\nORDER BY created_at DESC LIMIT 20;" },
+    { title: 'Average LOS by Dept', sql: "SELECT d.dept_name, ROUND(AVG(e.los_days),1) as avg_los,\n       COUNT(e.encounter_id) as encounters\nFROM encounters e\nJOIN departments d ON e.department_id = d.dept_id\nWHERE e.los_days IS NOT NULL\nGROUP BY d.dept_id\nORDER BY avg_los DESC;" },
+    { title: 'Insurance Claims', sql: "SELECT claim_status, COUNT(*) as count,\n       ROUND(SUM(claim_amount),2) as total_amount,\n       ROUND(SUM(paid_amount),2) as total_paid\nFROM insurance_claims\nGROUP BY claim_status;" },
+    { title: 'Top 10 Diagnoses', sql: "SELECT icd10_code, description, COUNT(*) as count\nFROM diagnoses\nGROUP BY icd10_code, description\nORDER BY count DESC LIMIT 10;" },
+    { title: 'Database Schema', sql: "SELECT name, sql FROM sqlite_master\nWHERE type='table' AND name NOT LIKE 'sqlite_%'\nORDER BY name;" },
+  ];
+
+  document.getElementById('common-queries-list').innerHTML = queries.map(q => `
+    <div class="common-query-item" onclick="loadCommonQuery(this)" data-sql="${escapeHtml(q.sql)}">
+      <div class="query-title">${escapeHtml(q.title)}</div>
+      <code>${escapeHtml(q.sql.substring(0, 60))}...</code>
+    </div>
+  `).join('');
+}
+
+function loadCommonQuery(el) {
+  sqlEditor.value = el.dataset.sql;
+  updateSqlLineNumbers();
+  sqlEditor.focus();
+}
+
+/* ================================================================
+   DASHBOARD
+   ================================================================ */
 async function loadDashboard() {
-  const [metrics, charts] = await Promise.all([api('/api/dashboard/metrics'), api('/api/dashboard/charts')]);
-  const kg = document.getElementById('kpiGrid');
-  kg.innerHTML = [
-    {v:metrics.total_patients, l:'Total Patients'},
-    {v:metrics.encounters_30d, l:'Encounters (30d)'},
-    {v:metrics.avg_los_days+'d', l:'Avg Length of Stay'},
-    {v:metrics.ed_visits_7d, l:'ED Visits (7d)'},
-    {v:metrics.active_encounters, l:'Active Encounters'},
-    {v:metrics.critical_labs_7d, l:'Critical Labs (7d)', c:metrics.critical_labs_7d>0?'var(--red)':''},
-    {v:metrics.hl7_errors, l:'HL7 Errors', c:metrics.hl7_errors>0?'var(--yellow)':''},
-    {v:metrics.open_alerts, l:'Open Alerts', c:metrics.open_alerts>0?'var(--yellow)':''},
-  ].map(k=>`<div class="card kpi"><div class="kpi-val" ${k.c?`style="color:${k.c}"`:''}">${k.v}</div><div class="kpi-label">${k.l}</div></div>`).join('');
-
-  const cg = document.getElementById('chartGrid');
-  const maxEnc = Math.max(...(charts.encounters_by_type||[]).map(x=>x.count),1);
-  const maxDx = Math.max(...(charts.top_diagnoses||[]).map(x=>x.count),1);
-  const maxDept = Math.max(...(charts.department_census||[]).map(x=>x.active),1);
-  const colors = ['var(--teal)','var(--blue)','var(--purple)','var(--yellow)','var(--green)','var(--red)'];
-  cg.innerHTML = `
-    <div class="card chart-card"><h3>Encounters by Type</h3><div class="bar-chart">${(charts.encounters_by_type||[]).map((x,i)=>`<div class="bar-row"><span class="bar-label">${x.encounter_type}</span><div class="bar-track"><div class="bar-fill" style="width:${x.count/maxEnc*100}%;background:${colors[i%6]}"></div></div><span class="bar-val">${x.count}</span></div>`).join('')}</div></div>
-    <div class="card chart-card"><h3>Top 10 Diagnoses</h3><div class="bar-chart">${(charts.top_diagnoses||[]).map((x,i)=>`<div class="bar-row"><span class="bar-label" title="${x.description}">${(x.description||'').slice(0,25)}</span><div class="bar-track"><div class="bar-fill" style="width:${x.count/maxDx*100}%;background:${colors[i%6]}"></div></div><span class="bar-val">${x.count}</span></div>`).join('')}</div></div>
-    <div class="card chart-card"><h3>Department Census (Active)</h3><div class="bar-chart">${(charts.department_census||[]).map((x,i)=>`<div class="bar-row"><span class="bar-label">${x.name}</span><div class="bar-track"><div class="bar-fill" style="width:${x.active/Math.max(maxDept,1)*100}%;background:${colors[i%6]}"></div></div><span class="bar-val">${x.active}</span></div>`).join('')}</div></div>
-    <div class="card chart-card"><h3>System Health</h3><div class="bar-chart">${(charts.system_health||[]).map(x=>`<div class="bar-row"><span class="bar-label">${x.system_name}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,x.response_time_ms/50)}%;background:${x.status==='operational'?'var(--green)':x.status==='degraded'?'var(--yellow)':'var(--red)'}"></div></div><span class="bar-val">${x.status}</span></div>`).join('')}</div></div>
-    <div class="card chart-card" style="grid-column:1/-1"><h3>Monthly Encounter Trend</h3><div class="bar-chart">${(charts.monthly_encounters||[]).map((x,i)=>`<div class="bar-row"><span class="bar-label">${x.month}</span><div class="bar-track"><div class="bar-fill" style="width:${x.count/Math.max(...(charts.monthly_encounters||[]).map(m=>m.count),1)*100}%;background:var(--teal)"></div></div><span class="bar-val">${x.count}</span></div>`).join('')}</div></div>`;
+  const body = document.getElementById('dashboard-body');
+  body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted)"><div class="spinner spinner-lg"></div><p style="margin-top:16px">Loading dashboard...</p></div>';
+  try {
+    const [metrics, charts] = await Promise.all([
+      api('/api/dashboard/metrics'),
+      api('/api/dashboard/charts')
+    ]);
+    renderDashboard(metrics, charts);
+  } catch (err) {
+    body.innerHTML = `<div style="padding:20px;color:var(--color-danger)">Failed to load dashboard: ${escapeHtml(err.message)}</div>`;
+  }
 }
 
-// ---------- BADGES ----------
+function renderDashboard(m, c) {
+  const body = document.getElementById('dashboard-body');
+  const encounters_by_type = c.encounters_by_type || [];
+  const top_diagnoses = c.top_diagnoses || [];
+  const dept_census = c.department_census || [];
+  const monthly = c.monthly_encounters || [];
+  const sysHealth = c.system_health || [];
+
+  const maxEncByType = Math.max(...encounters_by_type.map(e => e.count), 1);
+  const maxDx = Math.max(...top_diagnoses.map(d => d.count), 1);
+  const maxCensus = Math.max(...dept_census.map(d => d.active), 1);
+
+  body.innerHTML = `
+    <!-- KPI Cards -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-value">${m.total_patients || 0}</div>
+        <div class="kpi-label">Total Patients</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">${m.active_encounters || 0}</div>
+        <div class="kpi-label">Active Encounters</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">${m.avg_los_days || 'N/A'}</div>
+        <div class="kpi-label">Avg LOS (days)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">${m.encounters_30d || 0}</div>
+        <div class="kpi-label">Encounters (30d)</div>
+      </div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-value">${m.ed_visits_7d || 0}</div>
+        <div class="kpi-label">ED Visits (7d)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" style="color:var(--color-danger)">${m.critical_labs_7d || 0}</div>
+        <div class="kpi-label">Critical Labs (7d)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" style="color:${m.hl7_errors > 0 ? 'var(--color-danger)' : 'var(--color-success)'}">${m.hl7_errors || 0}</div>
+        <div class="kpi-label">HL7 Errors</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" style="color:${m.open_alerts > 0 ? 'var(--color-warning)' : 'var(--color-success)'}">${m.open_alerts || 0}</div>
+        <div class="kpi-label">Open Alerts</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-grid">
+      ${encounters_by_type.length ? `<div class="chart-card">
+        <h4>Encounters by Type</h4>
+        <div class="bar-chart">
+          ${encounters_by_type.map(e => `
+            <div class="bar-row">
+              <span class="bar-label">${escapeHtml(e.encounter_type)}</span>
+              <div class="bar-track"><div class="bar-fill teal" style="width:${(e.count / maxEncByType * 100).toFixed(1)}%"></div></div>
+              <span class="bar-value">${e.count}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>` : ''}
+      ${top_diagnoses.length ? `<div class="chart-card">
+        <h4>Top Diagnoses</h4>
+        <div class="bar-chart">
+          ${top_diagnoses.slice(0, 10).map(d => `
+            <div class="bar-row">
+              <span class="bar-label" title="${escapeHtml(d.description || '')}">${escapeHtml((d.description || '').substring(0, 25))}</span>
+              <div class="bar-track"><div class="bar-fill blue" style="width:${(d.count / maxDx * 100).toFixed(1)}%"></div></div>
+              <span class="bar-value">${d.count}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>` : ''}
+      ${dept_census.length ? `<div class="chart-card">
+        <h4>Department Census</h4>
+        <div class="bar-chart">
+          ${dept_census.map(d => `
+            <div class="bar-row">
+              <span class="bar-label">${escapeHtml(d.name)}</span>
+              <div class="bar-track"><div class="bar-fill green" style="width:${(d.active / maxCensus * 100).toFixed(1)}%"></div></div>
+              <span class="bar-value">${d.active}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>` : ''}
+      ${monthly.length ? `<div class="chart-card">
+        <h4>Monthly Encounters (6mo)</h4>
+        <div class="bar-chart">
+          ${monthly.map(r => {
+            const maxM = Math.max(...monthly.map(x => x.count), 1);
+            return `<div class="bar-row">
+              <span class="bar-label">${escapeHtml(r.month)}</span>
+              <div class="bar-track"><div class="bar-fill teal" style="width:${(r.count / maxM * 100).toFixed(1)}%"></div></div>
+              <span class="bar-value">${r.count}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>` : ''}
+    </div>
+
+    <!-- System Health -->
+    <div class="alerts-section">
+      <h4>System Health</h4>
+      ${sysHealth.length ? sysHealth.map(s => `
+        <div class="alert-item">
+          <span class="alert-severity ${s.status === 'critical' ? 'critical' : s.status === 'warning' ? 'warning' : 'info'}">${escapeHtml(s.status)}</span>
+          <span class="alert-text">${escapeHtml(s.system_name || 'Unknown')}</span>
+          <span class="alert-time">${s.response_time_ms} alerts</span>
+        </div>
+      `).join('') : '<div style="padding:12px;color:var(--text-muted);font-size:0.8rem">All systems operational</div>'}
+    </div>
+  `;
+}
+
+/* ================================================================
+   PYTHON CONSOLE
+   ================================================================ */
+const pythonEditor = document.getElementById('python-editor');
+
+pythonEditor.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'Enter') {
+    e.preventDefault();
+    executePython();
+  }
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const start = pythonEditor.selectionStart;
+    const end = pythonEditor.selectionEnd;
+    pythonEditor.value = pythonEditor.value.substring(0, start) + '    ' + pythonEditor.value.substring(end);
+    pythonEditor.selectionStart = pythonEditor.selectionEnd = start + 4;
+  }
+});
+
+document.getElementById('btn-python-execute').addEventListener('click', executePython);
+document.getElementById('btn-python-clear').addEventListener('click', () => {
+  pythonEditor.value = '';
+  pythonEditor.focus();
+});
+
+async function executePython() {
+  const code = pythonEditor.value.trim();
+  if (!code) { showToast('Enter Python code first.', 'warning'); return; }
+
+  const btn = document.getElementById('btn-python-execute');
+  const output = document.getElementById('python-output');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Running...';
+  output.textContent = 'Running...';
+
+  try {
+    const data = await api('/api/python/execute', 'POST', { code });
+    let result = '';
+    if (data.output) result += data.output;
+    if (data.error) result += (result ? '\n' : '') + data.error;
+    if (data.returncode !== 0 && data.error) {
+      output.innerHTML = `<span class="error">${escapeHtml(result)}</span>`;
+    } else {
+      output.textContent = result || '(no output)';
+    }
+  } catch (err) {
+    output.innerHTML = `<span class="error">Error: ${escapeHtml(err.message)}</span>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Run Code \u25b6';
+  }
+}
+
+function populatePythonSnippets() {
+  const snippets = [
+    {
+      title: 'Count patients by gender',
+      code: "cursor.execute('SELECT gender, COUNT(*) FROM patients GROUP BY gender')\nfor row in cursor.fetchall():\n    print(f'{row[0]}: {row[1]}')"
+    },
+    {
+      title: 'Find critical lab results',
+      code: "cursor.execute('''SELECT p.first_name, p.last_name, lr.test_name, lr.result_value, lr.result_unit\n    FROM lab_results lr JOIN patients p ON lr.patient_mrn = p.mrn\n    WHERE lr.abnormal_flag = 'C' ORDER BY lr.collected_datetime DESC LIMIT 10''')\nfor row in cursor.fetchall():\n    print(f'{row[0]} {row[1]}: {row[2]} = {row[3]} {row[4]}')"
+    },
+    {
+      title: 'Average length of stay',
+      code: "cursor.execute('SELECT los_days FROM encounters WHERE los_days IS NOT NULL')\nlos = [r[0] for r in cursor.fetchall()]\nimport statistics\nprint(f'Encounters: {len(los)}')\nprint(f'Avg LOS: {statistics.mean(los):.1f} days')\nprint(f'Median LOS: {statistics.median(los):.1f} days')\nprint(f'Max LOS: {max(los)} days')"
+    },
+    {
+      title: 'Top medications prescribed',
+      code: "cursor.execute(\"SELECT medication_name, COUNT(*) as cnt FROM medications GROUP BY medication_name ORDER BY cnt DESC LIMIT 15\")\nprint('Top Medications:')\nfor name, cnt in cursor.fetchall():\n    bar = '#' * (cnt // 5)\n    print(f'  {name:30s} | {bar} ({cnt})')"
+    },
+    {
+      title: 'Export data to CSV',
+      code: "import csv, io\ncursor.execute('SELECT mrn, first_name, last_name, dob, gender FROM patients LIMIT 20')\noutput = io.StringIO()\nwriter = csv.writer(output)\nwriter.writerow(['MRN','First','Last','DOB','Gender'])\nwriter.writerows(cursor.fetchall())\nprint(output.getvalue())"
+    }
+  ];
+
+  document.getElementById('python-snippets').innerHTML = snippets.map((s, i) => `
+    <div class="snippet-item" onclick="loadPythonSnippet(${i})">
+      <div class="snippet-title">${escapeHtml(s.title)}</div>
+      <code>${escapeHtml(s.code.split('\n')[0])}</code>
+    </div>
+  `).join('');
+
+  window._pythonSnippets = snippets;
+}
+
+function loadPythonSnippet(index) {
+  const s = window._pythonSnippets[index];
+  if (s) {
+    pythonEditor.value = s.code;
+    pythonEditor.focus();
+  }
+}
+
+/* ================================================================
+   HELP PANEL
+   ================================================================ */
+function populateHelpContent() {
+  document.getElementById('help-content').innerHTML = `
+    <details class="help-section" open>
+      <summary>Common SQL Patterns for Health Informatics</summary>
+      <div class="help-content">
+        <h5>Patient Lookup</h5>
+        <pre>SELECT * FROM patients WHERE mrn = 'MRN100001';
+SELECT * FROM patients WHERE last_name LIKE 'Smith%';</pre>
+
+        <h5>Active Encounters with Patient Info</h5>
+        <pre>SELECT p.mrn, p.first_name, p.last_name,
+       e.encounter_type, e.admission_date, d.dept_name
+FROM encounters e
+JOIN patients p ON e.patient_mrn = p.mrn
+JOIN departments d ON e.department_id = d.dept_id
+WHERE e.status = 'open';</pre>
+
+        <h5>Lab Results with Abnormal Flags</h5>
+        <pre>SELECT p.mrn, p.last_name, lr.test_name,
+       lr.result_value, lr.result_unit, lr.abnormal_flag
+FROM lab_results lr
+JOIN patients p ON lr.patient_mrn = p.mrn
+WHERE lr.abnormal_flag IN ('H','L','C')
+ORDER BY lr.collected_datetime DESC;</pre>
+
+        <h5>Aggregate Queries</h5>
+        <pre>-- Count encounters by type
+SELECT encounter_type, COUNT(*) as count
+FROM encounters GROUP BY encounter_type;
+
+-- Average length of stay
+SELECT ROUND(AVG(los_days),1) as avg_los
+FROM encounters WHERE los_days IS NOT NULL;</pre>
+      </div>
+    </details>
+
+    <details class="help-section">
+      <summary>ICD-10 Code Reference</summary>
+      <div class="help-content">
+        <h5>Common Code Categories</h5>
+        <ul>
+          <li><strong>A00-B99</strong> - Infectious and parasitic diseases</li>
+          <li><strong>C00-D49</strong> - Neoplasms</li>
+          <li><strong>E00-E89</strong> - Endocrine, nutritional, and metabolic diseases</li>
+          <li><strong>F01-F99</strong> - Mental and behavioral disorders</li>
+          <li><strong>G00-G99</strong> - Diseases of the nervous system</li>
+          <li><strong>I00-I99</strong> - Diseases of the circulatory system</li>
+          <li><strong>J00-J99</strong> - Diseases of the respiratory system</li>
+          <li><strong>K00-K95</strong> - Diseases of the digestive system</li>
+          <li><strong>M00-M99</strong> - Musculoskeletal and connective tissue</li>
+          <li><strong>N00-N99</strong> - Diseases of the genitourinary system</li>
+          <li><strong>R00-R99</strong> - Symptoms, signs, and abnormal findings</li>
+          <li><strong>S00-T88</strong> - Injury, poisoning, and external causes</li>
+          <li><strong>Z00-Z99</strong> - Factors influencing health status</li>
+        </ul>
+        <h5>Query ICD-10 Codes in Database</h5>
+        <pre>SELECT DISTINCT icd10_code, description
+FROM diagnoses ORDER BY icd10_code;</pre>
+      </div>
+    </details>
+
+    <details class="help-section">
+      <summary>HL7 Message Basics</summary>
+      <div class="help-content">
+        <h5>Common Message Types</h5>
+        <ul>
+          <li><strong>ADT^A01</strong> - Patient Admit</li>
+          <li><strong>ADT^A03</strong> - Patient Discharge</li>
+          <li><strong>ADT^A08</strong> - Patient Information Update</li>
+          <li><strong>ORM^O01</strong> - Order Message</li>
+          <li><strong>ORU^R01</strong> - Observation Result (Lab Results)</li>
+          <li><strong>SIU^S12</strong> - Scheduling Information</li>
+        </ul>
+        <h5>HL7 Acknowledgement Codes</h5>
+        <ul>
+          <li><strong>AA</strong> - Application Accept</li>
+          <li><strong>AE</strong> - Application Error</li>
+          <li><strong>AR</strong> - Application Reject</li>
+          <li><strong>CA</strong> - Commit Accept</li>
+          <li><strong>CE</strong> - Commit Error</li>
+          <li><strong>CR</strong> - Commit Reject</li>
+        </ul>
+        <h5>Query HL7 Messages</h5>
+        <pre>SELECT message_type, trigger_event, status, COUNT(*)
+FROM hl7_messages
+GROUP BY message_type, trigger_event, status
+ORDER BY message_type;</pre>
+      </div>
+    </details>
+
+    <details class="help-section">
+      <summary>HIPAA Quick Reference</summary>
+      <div class="help-content">
+        <h5>Key HIPAA Rules</h5>
+        <ul>
+          <li><strong>Privacy Rule</strong> - Governs use and disclosure of Protected Health Information (PHI)</li>
+          <li><strong>Security Rule</strong> - Technical, physical, and administrative safeguards for electronic PHI</li>
+          <li><strong>Breach Notification Rule</strong> - Requirements for notifying affected individuals</li>
+          <li><strong>Minimum Necessary Rule</strong> - Limit PHI access to what is needed for the task</li>
+        </ul>
+        <h5>PHI Identifiers (18 types)</h5>
+        <ul>
+          <li>Names, Dates (except year), Phone/Fax numbers</li>
+          <li>Email, SSN, Medical Record Numbers</li>
+          <li>Health plan IDs, Account numbers, Certificate numbers</li>
+          <li>Vehicle IDs, Device IDs, URLs, IP addresses</li>
+          <li>Biometric IDs, Photos, Any other unique identifier</li>
+        </ul>
+        <h5>Audit Log Analysis</h5>
+        <pre>-- Check for suspicious access patterns
+SELECT u.full_name, al.action, COUNT(*) as count,
+       MIN(al.timestamp) as first, MAX(al.timestamp) as last
+FROM audit_log al
+JOIN users u ON al.user_id = u.user_id
+GROUP BY u.full_name, al.action
+ORDER BY count DESC;</pre>
+      </div>
+    </details>
+
+    <details class="help-section">
+      <summary>EHR System Terminology</summary>
+      <div class="help-content">
+        <h5>Common Abbreviations</h5>
+        <ul>
+          <li><strong>EHR</strong> - Electronic Health Record</li>
+          <li><strong>EMR</strong> - Electronic Medical Record</li>
+          <li><strong>CPOE</strong> - Computerized Provider Order Entry</li>
+          <li><strong>CDS</strong> - Clinical Decision Support</li>
+          <li><strong>ADT</strong> - Admit/Discharge/Transfer</li>
+          <li><strong>LIS</strong> - Laboratory Information System</li>
+          <li><strong>RIS</strong> - Radiology Information System</li>
+          <li><strong>PACS</strong> - Picture Archiving and Communication System</li>
+          <li><strong>HIE</strong> - Health Information Exchange</li>
+          <li><strong>MRN</strong> - Medical Record Number</li>
+          <li><strong>NPI</strong> - National Provider Identifier</li>
+          <li><strong>LOS</strong> - Length of Stay</li>
+        </ul>
+        <h5>Medication Frequencies</h5>
+        <ul>
+          <li><strong>BID</strong> - Twice daily</li>
+          <li><strong>TID</strong> - Three times daily</li>
+          <li><strong>QID</strong> - Four times daily</li>
+          <li><strong>Q4H/Q6H/Q8H</strong> - Every 4/6/8 hours</li>
+          <li><strong>PRN</strong> - As needed</li>
+          <li><strong>PO</strong> - By mouth (oral)</li>
+          <li><strong>IV</strong> - Intravenous</li>
+          <li><strong>SubQ</strong> - Subcutaneous</li>
+          <li><strong>INH</strong> - Inhaled</li>
+        </ul>
+        <h5>Database Tables Available</h5>
+        <pre>-- List all tables
+SELECT name FROM sqlite_master WHERE type='table';
+
+-- View table structure
+PRAGMA table_info(patients);
+PRAGMA table_info(encounters);
+PRAGMA table_info(lab_results);</pre>
+      </div>
+    </details>
+  `;
+}
+
+/* ================================================================
+   RIGHT SIDEBAR
+   ================================================================ */
+function updateRightSidebar() {
+  const task = state.selectedTask;
+  const sidebar = document.getElementById('current-task-sidebar');
+  const hints = document.getElementById('hint-content');
+
+  if (!task) {
+    sidebar.innerHTML = '<h4>No active task</h4><p>Select a task from the Tasks panel to get started.</p>';
+    hints.innerHTML = 'Select a task to see available guidance.';
+    return;
+  }
+
+  const steps = task.steps || [];
+
+  sidebar.innerHTML = `
+    <h4>${escapeHtml(task.title)}</h4>
+    <p style="font-size:0.8rem;color:var(--text-secondary)">${escapeHtml(task.category || '')} &middot; ~${task.estimated_minutes || '?'} min</p>
+    <div style="margin-top:8px">
+      <span class="badge badge-priority-${priorityClass(task.priority)}" style="font-size:0.75rem">${escapeHtml(task.priority)} priority</span>
+      <span class="badge badge-tools" style="font-size:0.75rem">${escapeHtml(task.status)}</span>
+    </div>
+    ${steps.length ? `
+      <div style="margin-top:12px;font-size:0.8rem">
+        <strong>Progress:</strong> ${steps.filter(s => s.completed).length}/${steps.length} steps
+      </div>
+    ` : ''}
+  `;
+
+  // Update assistance section
+  const level = state.config ? state.config.assistance_level : 'full';
+  if (level === 'none') {
+    hints.innerHTML = '<div style="color:var(--text-muted)">Assistance is disabled for this session.</div>';
+    document.getElementById('btn-ask-help').style.display = 'none';
+  } else {
+    hints.innerHTML = '<div style="color:var(--text-muted)">Click "Ask for Help" for guidance on the current task.</div>';
+    document.getElementById('btn-ask-help').style.display = 'block';
+  }
+}
+
+document.getElementById('btn-ask-help').addEventListener('click', async () => {
+  if (!state.selectedTask) { showToast('Select a task first.', 'info'); return; }
+  try {
+    const data = await api(`/api/help/task/${state.selectedTask.id}`);
+    const hints = document.getElementById('hint-content');
+    if (data.help) {
+      hints.innerHTML = `<div style="white-space:pre-wrap;font-size:0.8rem;line-height:1.6">${escapeHtml(data.help)}</div>`;
+    }
+  } catch (err) {
+    showToast('Failed to get help: ' + err.message, 'error');
+  }
+});
+
+// Collapse right sidebar
+document.getElementById('btn-collapse-right').addEventListener('click', () => {
+  state.rightSidebarOpen = !state.rightSidebarOpen;
+  document.getElementById('right-sidebar').classList.toggle('collapsed', !state.rightSidebarOpen);
+});
+
+/* ================================================================
+   NOTIFICATIONS
+   ================================================================ */
+function addNotification(title, body) {
+  const notif = {
+    id: Date.now(),
+    title,
+    body,
+    time: new Date().toISOString(),
+    read: false
+  };
+  state.notifications.unshift(notif);
+  updateNotificationBadge();
+  renderNotifications();
+}
+
+function updateNotificationBadge() {
+  const unread = state.notifications.filter(n => !n.read).length;
+  const badge = document.getElementById('notification-count');
+  badge.textContent = unread;
+  badge.classList.toggle('hidden', unread === 0);
+}
+
+function renderNotifications() {
+  const container = document.getElementById('notification-list');
+  if (!state.notifications.length) {
+    container.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:0.8rem">No notifications</div>';
+    return;
+  }
+  container.innerHTML = state.notifications.map(n => `
+    <div class="notification-item ${n.read ? '' : 'unread'}" onclick="markNotificationRead(${n.id})">
+      <div class="notif-title">${escapeHtml(n.title)}</div>
+      <div class="notif-body">${escapeHtml(n.body)}</div>
+      <div class="notif-time">${timeAgo(n.time)}</div>
+    </div>
+  `).join('');
+}
+
+function markNotificationRead(id) {
+  const notif = state.notifications.find(n => n.id === id);
+  if (notif) notif.read = true;
+  updateNotificationBadge();
+  renderNotifications();
+}
+
+document.getElementById('notification-bell').addEventListener('click', () => {
+  state.notificationPanelOpen = !state.notificationPanelOpen;
+  document.getElementById('notification-panel').classList.toggle('open', state.notificationPanelOpen);
+});
+document.getElementById('btn-close-notifications').addEventListener('click', () => {
+  state.notificationPanelOpen = false;
+  document.getElementById('notification-panel').classList.remove('open');
+});
+
+// Close notification panel on outside click
+document.addEventListener('click', (e) => {
+  if (state.notificationPanelOpen &&
+      !e.target.closest('#notification-panel') &&
+      !e.target.closest('#notification-bell')) {
+    state.notificationPanelOpen = false;
+    document.getElementById('notification-panel').classList.remove('open');
+  }
+});
+
+/* ================================================================
+   BADGES UPDATE
+   ================================================================ */
 function updateBadges() {
-  const unread = S.emails.filter(e=>!e.read).length;
-  const ib = document.getElementById('inboxBadge');
-  if(unread>0){ib.style.display='';ib.textContent=unread;}else{ib.style.display='none';}
-  const pending = S.tasks.filter(t=>t.status==='pending').length;
-  const tb = document.getElementById('taskBadge');
-  if(pending>0){tb.style.display='';tb.textContent=pending;}else{tb.style.display='none';}
+  // Inbox unread count
+  const unread = state.emails.filter(e => !e.read).length;
+  const inboxBadge = document.getElementById('inbox-badge');
+  inboxBadge.textContent = unread;
+  inboxBadge.classList.toggle('hidden', unread === 0);
+
+  // Tasks pending count
+  const pending = state.tasks.filter(t => t.status === 'pending' || t.status === 'in_progress').length;
+  const tasksBadge = document.getElementById('tasks-badge');
+  tasksBadge.textContent = pending;
+  tasksBadge.classList.toggle('hidden', pending === 0);
 }
+
+/* ================================================================
+   RESET SCENARIO
+   ================================================================ */
+document.getElementById('btn-reset').addEventListener('click', () => {
+  showConfirmDialog(
+    'Reset Shift',
+    'Are you sure you want to reset the current shift? All progress will be lost.',
+    async () => {
+      try {
+        await api('/api/scenario/reset', 'POST');
+      } catch (e) { /* ok */ }
+
+      clearInterval(state.shiftTimerInterval);
+      Object.assign(state, {
+        scenario: null, config: null, currentPanel: 'inbox',
+        emails: [], tasks: [], patients: [],
+        selectedEmail: null, selectedTask: null, selectedPatientMrn: null,
+        patientCache: null,
+        sqlHistory: [], sqlLastResults: null,
+        shiftStartTime: null, shiftDuration: null, shiftTimerInterval: null,
+        notifications: [], inboxFilter: 'all', ehrTab: 'encounters'
+      });
+
+      document.getElementById('workspace').style.display = 'none';
+      document.getElementById('setup-screen').style.display = '';
+      const btn = document.getElementById('btn-start');
+      btn.disabled = false;
+      btn.innerHTML = 'Start Shift \u25b6';
+
+      showToast('Shift reset successfully.', 'info');
+    }
+  );
+});
+
+/* ================================================================
+   CONFIRM DIALOG
+   ================================================================ */
+let modalResolve = null;
+
+function showConfirmDialog(title, message, onConfirm) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-message').textContent = message;
+  document.getElementById('modal-overlay').classList.add('open');
+  modalResolve = onConfirm;
+}
+
+document.getElementById('modal-confirm').addEventListener('click', () => {
+  document.getElementById('modal-overlay').classList.remove('open');
+  if (modalResolve) modalResolve();
+  modalResolve = null;
+});
+
+document.getElementById('modal-cancel').addEventListener('click', () => {
+  document.getElementById('modal-overlay').classList.remove('open');
+  modalResolve = null;
+});
+
+document.getElementById('modal-overlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('modal-overlay')) {
+    document.getElementById('modal-overlay').classList.remove('open');
+    modalResolve = null;
+  }
+});
+
+/* ================================================================
+   KEYBOARD SHORTCUTS
+   ================================================================ */
+document.addEventListener('keydown', (e) => {
+  // Escape to close panels
+  if (e.key === 'Escape') {
+    if (state.notificationPanelOpen) {
+      state.notificationPanelOpen = false;
+      document.getElementById('notification-panel').classList.remove('open');
+    }
+    if (state.sqlHistoryOpen) {
+      state.sqlHistoryOpen = false;
+      document.getElementById('sql-history-panel').classList.remove('open');
+    }
+    if (document.getElementById('modal-overlay').classList.contains('open')) {
+      document.getElementById('modal-overlay').classList.remove('open');
+      modalResolve = null;
+    }
+  }
+});
+
+/* ================================================================
+   PERIODIC REFRESH (check for new tasks/emails)
+   ================================================================ */
+setInterval(async () => {
+  if (!state.scenario) return;
+  try {
+    const emailData = await api('/api/emails?filter=' + state.inboxFilter);
+    const prevCount = state.emails.length;
+    state.emails = emailData.emails || [];
+    if (state.emails.length > prevCount) {
+      const newCount = state.emails.length - prevCount;
+      addNotification('New Email', `You have ${newCount} new email${newCount > 1 ? 's' : ''}.`);
+      showToast(`${newCount} new email${newCount > 1 ? 's' : ''} received!`, 'info');
+    }
+    renderInboxList();
+    updateBadges();
+  } catch (e) { /* silent */ }
+
+  try {
+    const taskData = await api('/api/tasks');
+    state.tasks = taskData.tasks || [];
+    renderTasksList();
+    updateBadges();
+    updateTaskProgress();
+  } catch (e) { /* silent */ }
+}, 30000);
+
+// Hide workspace initially
+document.getElementById('workspace').style.display = 'none';
+
 </script>
 </body>
 </html>

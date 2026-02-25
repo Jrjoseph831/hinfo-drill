@@ -1,1501 +1,1387 @@
 """
-Health Informatics Learning Platform - Database Schema & Seed Data Generator
+database.py - SQLite database initialization and seeding for the
+Health Informatics Learning Platform.
 
-Creates a comprehensive SQLite database modelling a hospital EHR system
-with realistic clinical, administrative, quality, and integration data.
+Simulates a hospital EHR system with 16 comprehensive tables and
+realistic fake data generated via the Faker library (seed=42).
 
-Usage:
-    python database.py              # Creates hinfo.db in the current directory
-    python database.py <path.db>    # Creates database at the specified path
-
-Programmatic:
-    from database import init_db, seed_data
-    init_db('hinfo.db')
-    seed_data('hinfo.db')
+Public API
+----------
+    init_db(db_path)  -- create schema + seed data, return nothing
+    get_db(db_path)   -- return an sqlite3.Connection
 """
 
 import sqlite3
+import os
 import random
-import string
-import sys
+import math
 from datetime import datetime, timedelta
-from faker import Faker
 
-fake = Faker()
-Faker.seed(42)
+try:
+    from faker import Faker
+    fake = Faker()
+    Faker.seed(42)
+    HAS_FAKER = True
+except ImportError:
+    HAS_FAKER = False
+
 random.seed(42)
 
+DEFAULT_DB_PATH = "hinfo.db"
+
+
 # ---------------------------------------------------------------------------
-# Constants - realistic medical reference data
+# Reference data
 # ---------------------------------------------------------------------------
 
-DEPARTMENTS = [
-    ("Emergency Department", "ED", 1, "Main", "(555) 100-0001", 40),
-    ("Intensive Care Unit", "ICU", 3, "Main", "(555) 100-0002", 24),
-    ("Medical/Surgical", "MEDSURG", 4, "Main", "(555) 100-0003", 60),
-    ("Pediatrics", "PEDS", 2, "East Wing", "(555) 100-0004", 30),
-    ("OB/GYN", "OBGYN", 2, "East Wing", "(555) 100-0005", 25),
-    ("Cardiology", "CARD", 5, "Heart Center", "(555) 100-0006", 20),
-    ("Oncology", "ONC", 6, "Cancer Center", "(555) 100-0007", 18),
-    ("Orthopedics", "ORTHO", 4, "Main", "(555) 100-0008", 22),
-    ("Neurology", "NEURO", 5, "Main", "(555) 100-0009", 16),
-    ("Radiology", "RAD", 1, "Main", "(555) 100-0010", None),
-    ("Laboratory", "LAB", 1, "Main", "(555) 100-0011", None),
-    ("Pharmacy", "PHARM", 1, "Main", "(555) 100-0012", None),
-    ("Respiratory Therapy", "RESP", 3, "Main", "(555) 100-0013", None),
-    ("Rehabilitation", "REHAB", 2, "West Wing", "(555) 100-0014", 12),
-    ("Psychiatry", "PSYCH", 6, "West Wing", "(555) 100-0015", 20),
-]
-
-SPECIALTIES = [
-    "Emergency Medicine", "Internal Medicine", "Family Medicine",
-    "Cardiology", "Pulmonology", "Neurology", "Oncology",
-    "Orthopedic Surgery", "General Surgery", "Pediatrics",
-    "Obstetrics and Gynecology", "Psychiatry", "Radiology",
-    "Anesthesiology", "Pathology", "Critical Care Medicine",
-    "Endocrinology", "Gastroenterology", "Nephrology",
-    "Infectious Disease",
-]
-
-CREDENTIALS = ["MD", "MD", "MD", "DO", "DO", "NP", "PA", "RN", "RN", "MD"]
-
-# 90 ICD-10 codes with descriptions
 ICD10_CODES = [
-    ("I10", "Essential (primary) hypertension"),
-    ("E11.9", "Type 2 diabetes mellitus without complications"),
-    ("E11.65", "Type 2 diabetes mellitus with hyperglycemia"),
-    ("J18.9", "Pneumonia, unspecified organism"),
-    ("N39.0", "Urinary tract infection, site not specified"),
-    ("K21.0", "Gastro-esophageal reflux disease with esophagitis"),
-    ("M54.5", "Low back pain"),
-    ("J44.1", "Chronic obstructive pulmonary disease with acute exacerbation"),
-    ("I25.10", "Atherosclerotic heart disease of native coronary artery"),
-    ("E78.5", "Hyperlipidemia, unspecified"),
-    ("F32.9", "Major depressive disorder, single episode, unspecified"),
-    ("J06.9", "Acute upper respiratory infection, unspecified"),
-    ("I50.9", "Heart failure, unspecified"),
-    ("I48.91", "Unspecified atrial fibrillation"),
-    ("E87.1", "Hypo-osmolality and hyponatremia"),
-    ("N17.9", "Acute kidney failure, unspecified"),
-    ("D64.9", "Anemia, unspecified"),
-    ("I63.9", "Cerebral infarction, unspecified"),
-    ("J96.01", "Acute respiratory failure with hypoxia"),
-    ("A41.9", "Sepsis, unspecified organism"),
-    ("K92.1", "Melena"),
-    ("R07.9", "Chest pain, unspecified"),
-    ("K59.00", "Constipation, unspecified"),
-    ("J45.20", "Mild intermittent asthma, uncomplicated"),
-    ("J45.41", "Moderate persistent asthma with acute exacerbation"),
-    ("E11.22", "Type 2 diabetes mellitus with diabetic chronic kidney disease"),
+    ("E11.9",  "Type 2 diabetes mellitus without complications"),
+    ("I10",    "Essential (primary) hypertension"),
+    ("J18.9",  "Pneumonia, unspecified organism"),
+    ("I25.10", "Atherosclerotic heart disease of native coronary artery without angina pectoris"),
+    ("E78.5",  "Hyperlipidemia, unspecified"),
+    ("N17.9",  "Acute kidney failure, unspecified"),
+    ("J44.1",  "Chronic obstructive pulmonary disease with acute exacerbation"),
+    ("I50.9",  "Heart failure, unspecified"),
+    ("K21.0",  "Gastro-esophageal reflux disease with esophagitis"),
+    ("M54.5",  "Low back pain"),
+    ("F32.9",  "Major depressive disorder, single episode, unspecified"),
+    ("J06.9",  "Acute upper respiratory infection, unspecified"),
+    ("N39.0",  "Urinary tract infection, site not specified"),
+    ("I63.9",  "Cerebral infarction, unspecified"),
+    ("K80.20", "Calculus of gallbladder without cholecystitis"),
+    ("E87.1",  "Hypo-osmolality and hyponatremia"),
+    ("D64.9",  "Anemia, unspecified"),
     ("G47.33", "Obstructive sleep apnea"),
-    ("I21.9", "Acute myocardial infarction, unspecified"),
-    ("K80.20", "Calculus of gallbladder without cholecystitis without obstruction"),
-    ("N18.3", "Chronic kidney disease, stage 3"),
-    ("N18.6", "End stage renal disease"),
-    ("F41.1", "Generalized anxiety disorder"),
-    ("G40.909", "Epilepsy, unspecified, not intractable, without status epilepticus"),
-    ("M79.3", "Panniculitis, unspecified"),
-    ("L03.311", "Cellulitis of abdominal wall"),
-    ("T78.40XA", "Allergy, unspecified, initial encounter"),
-    ("E03.9", "Hypothyroidism, unspecified"),
-    ("B96.20", "Unspecified Escherichia coli as cause of diseases classified elsewhere"),
-    ("R11.2", "Nausea with vomiting, unspecified"),
-    ("M17.11", "Primary osteoarthritis, right knee"),
-    ("M17.12", "Primary osteoarthritis, left knee"),
+    ("I48.91", "Unspecified atrial fibrillation"),
+    ("J96.01", "Acute respiratory failure with hypoxia"),
+    ("I21.9",  "Acute myocardial infarction, unspecified"),
+    ("E11.65", "Type 2 diabetes mellitus with hyperglycemia"),
+    ("J45.20", "Mild intermittent asthma, uncomplicated"),
+    ("K59.00", "Constipation, unspecified"),
+    ("R07.9",  "Chest pain, unspecified"),
+    ("G43.909","Migraine, unspecified, not intractable, without status migrainosus"),
+    ("M79.3",  "Panniculitis, unspecified"),
     ("I26.99", "Other pulmonary embolism without acute cor pulmonale"),
-    ("G43.909", "Migraine, unspecified, not intractable, without status migrainosus"),
-    ("J20.9", "Acute bronchitis, unspecified"),
-    ("I73.9", "Peripheral vascular disease, unspecified"),
-    ("K57.32", "Diverticulitis of large intestine without perforation or abscess without bleeding"),
-    ("R10.9", "Unspecified abdominal pain"),
-    ("S72.001A", "Fracture of unspecified part of neck of right femur, initial encounter"),
-    ("S82.001A", "Unspecified fracture of right patella, initial encounter"),
-    ("E55.9", "Vitamin D deficiency, unspecified"),
-    ("Z87.891", "Personal history of nicotine dependence"),
-    ("Z79.4", "Long term (current) use of insulin"),
-    ("G20", "Parkinson disease"),
-    ("F10.20", "Alcohol dependence, uncomplicated"),
-    ("B37.0", "Candidal stomatitis"),
-    ("J15.9", "Unspecified bacterial pneumonia"),
-    ("M48.06", "Spinal stenosis, lumbar region"),
-    ("K76.0", "Fatty (change of) liver, not elsewhere classified"),
-    ("E66.01", "Morbid (severe) obesity due to excess calories"),
-    ("R06.02", "Shortness of breath"),
-    ("I70.0", "Atherosclerosis of aorta"),
-    ("N40.0", "Benign prostatic hyperplasia without lower urinary tract symptoms"),
-    ("D50.9", "Iron deficiency anemia, unspecified"),
-    ("R55", "Syncope and collapse"),
-    ("Z23", "Encounter for immunization"),
-    ("J02.9", "Acute pharyngitis, unspecified"),
-    ("M25.561", "Pain in right knee"),
-    ("M25.562", "Pain in left knee"),
-    ("H26.9", "Unspecified cataract"),
-    ("E87.6", "Hypokalemia"),
-    ("R50.9", "Fever, unspecified"),
-    ("I47.1", "Supraventricular tachycardia"),
-    ("J90", "Pleural effusion, not elsewhere classified"),
+    ("A41.9",  "Sepsis, unspecified organism"),
+    ("K92.1",  "Melena"),
+    ("L03.311","Cellulitis of abdominal wall"),
+    ("R10.9",  "Unspecified abdominal pain"),
+    ("E87.6",  "Hypokalemia"),
+    ("J20.9",  "Acute bronchitis, unspecified"),
+    ("N18.3",  "Chronic kidney disease, stage 3"),
+    ("G40.909","Epilepsy, unspecified, not intractable, without status epilepticus"),
+    ("R50.9",  "Fever, unspecified"),
+    ("M17.11", "Primary osteoarthritis, right knee"),
+    ("I25.5",  "Ischemic cardiomyopathy"),
+    ("J15.9",  "Unspecified bacterial pneumonia"),
+    ("E03.9",  "Hypothyroidism, unspecified"),
+    ("G20",    "Parkinson disease"),
+    ("I70.0",  "Atherosclerosis of aorta"),
+    ("K74.60", "Unspecified cirrhosis of liver"),
+    ("J84.10", "Pulmonary fibrosis, unspecified"),
     ("C34.90", "Malignant neoplasm of unspecified part of unspecified bronchus or lung"),
-    ("C50.919", "Malignant neoplasm of unspecified site of unspecified female breast"),
-    ("C18.9", "Malignant neoplasm of colon, unspecified"),
-    ("C61", "Malignant neoplasm of prostate"),
+    ("C50.919","Malignant neoplasm of unspecified site of unspecified female breast"),
+    ("C61",    "Malignant neoplasm of prostate"),
+    ("D50.9",  "Iron deficiency anemia, unspecified"),
+    ("F41.1",  "Generalized anxiety disorder"),
+    ("F10.20", "Alcohol dependence, uncomplicated"),
+    ("F17.210","Nicotine dependence, cigarettes, uncomplicated"),
+    ("B34.9",  "Viral infection, unspecified"),
+    ("R11.2",  "Nausea with vomiting, unspecified"),
+    ("R00.0",  "Tachycardia, unspecified"),
+    ("S72.001A","Fracture of unspecified part of neck of right femur, initial encounter"),
+    ("S82.001A","Unspecified fracture of right patella, initial encounter"),
+    ("T81.4XXA","Infection following a procedure, initial encounter"),
+    ("Z87.891","Personal history of nicotine dependence"),
+    ("Z96.641","Presence of right artificial hip joint"),
+    ("J69.0",  "Pneumonitis due to inhalation of food and vomit"),
+    ("R06.02", "Shortness of breath"),
+    ("R55",    "Syncope and collapse"),
+    ("K35.80", "Unspecified acute appendicitis"),
+    ("O80",    "Encounter for full-term uncomplicated delivery"),
+    ("F31.9",  "Bipolar disorder, unspecified"),
+    ("R42",    "Dizziness and giddiness"),
+    ("M48.06", "Spinal stenosis, lumbar region"),
+    ("S06.0X0A","Concussion without loss of consciousness, initial encounter"),
+    ("I71.4",  "Abdominal aortic aneurysm, without rupture"),
+    ("J38.00", "Paralysis of vocal cords and larynx, unspecified"),
+    ("T78.2XXA","Anaphylactic shock, unspecified, initial encounter"),
+    ("K25.9",  "Gastric ulcer, unspecified, without hemorrhage or perforation"),
+    ("N20.0",  "Calculus of kidney"),
+    ("R40.20", "Unspecified coma"),
+    ("E86.0",  "Dehydration"),
+    ("E11.22", "Type 2 diabetes mellitus with diabetic chronic kidney disease"),
+    ("I47.1",  "Supraventricular tachycardia"),
+    ("K56.60", "Unspecified intestinal obstruction"),
+    ("G45.9",  "Transient cerebral ischemic attack, unspecified"),
+    ("B96.20", "Unspecified Escherichia coli as the cause of diseases classified elsewhere"),
+    ("J90",    "Pleural effusion, not elsewhere classified"),
+    ("M62.82", "Rhabdomyolysis"),
+    ("N13.30", "Unspecified hydronephrosis"),
+    ("E87.0",  "Hyperosmolality and hypernatremia"),
+    ("I42.9",  "Cardiomyopathy, unspecified"),
+    ("R04.2",  "Hemoptysis"),
+    ("K57.30", "Diverticulosis of large intestine without perforation or abscess without bleeding"),
     ("Z51.11", "Encounter for antineoplastic chemotherapy"),
-    ("Z51.0", "Encounter for antineoplastic radiation therapy"),
-    ("F17.210", "Nicotine dependence, cigarettes, uncomplicated"),
-    ("G89.29", "Other chronic pain"),
-    ("M62.830", "Muscle spasm of back"),
-    ("R05.9", "Cough, unspecified"),
-    ("T14.91XA", "Suicide attempt, initial encounter"),
-    ("L97.529", "Non-pressure chronic ulcer of other part of left foot with unspecified severity"),
-    ("E11.40", "Type 2 diabetes mellitus with diabetic neuropathy, unspecified"),
-    ("I69.354", "Hemiplegia and hemiparesis following cerebral infarction affecting left non-dominant side"),
-    ("Z96.641", "Presence of right artificial hip joint"),
-    ("Z95.1", "Presence of aortocoronary bypass graft"),
-    ("Z66", "Do not resuscitate"),
+    ("Z51.0",  "Encounter for antineoplastic radiation therapy"),
+    ("I80.10", "Phlebitis and thrombophlebitis of unspecified femoral vein"),
+    ("M86.9",  "Osteomyelitis, unspecified"),
+    ("K83.0",  "Cholangitis"),
+    ("T50.901A","Poisoning by unspecified drugs, accidental, initial encounter"),
+    ("G93.1",  "Anoxic brain damage, not elsewhere classified"),
+    ("R65.20", "Severe sepsis without septic shock"),
+    ("R65.21", "Severe sepsis with septic shock"),
+    ("I24.0",  "Acute coronary thrombosis not resulting in myocardial infarction"),
+    ("J80",    "Acute respiratory distress syndrome"),
+    ("N40.0",  "Benign prostatic hyperplasia without lower urinary tract symptoms"),
+    ("Z23",    "Encounter for immunization"),
 ]
 
-# 50 CPT codes with descriptions
 CPT_CODES = [
-    ("99213", "Office/outpatient visit, established patient, low complexity"),
-    ("99214", "Office/outpatient visit, established patient, moderate complexity"),
-    ("99215", "Office/outpatient visit, established patient, high complexity"),
+    ("99213", "Office visit, established patient, low complexity"),
+    ("99214", "Office visit, established patient, moderate complexity"),
+    ("99215", "Office visit, established patient, high complexity"),
+    ("99221", "Initial hospital care, low complexity"),
+    ("99222", "Initial hospital care, moderate complexity"),
     ("99223", "Initial hospital care, high complexity"),
+    ("99231", "Subsequent hospital care, low complexity"),
     ("99232", "Subsequent hospital care, moderate complexity"),
     ("99233", "Subsequent hospital care, high complexity"),
-    ("99281", "Emergency department visit, straightforward"),
-    ("99283", "Emergency department visit, moderate complexity"),
-    ("99284", "Emergency department visit, moderately high complexity"),
-    ("99285", "Emergency department visit, high complexity"),
-    ("36415", "Venipuncture"),
+    ("99238", "Hospital discharge day management, 30 min or less"),
+    ("99281", "ED visit, self-limited/minor"),
+    ("99282", "ED visit, low to moderate severity"),
+    ("99283", "ED visit, moderate severity"),
+    ("99284", "ED visit, high severity"),
+    ("99285", "ED visit, high severity with threat to life"),
+    ("99291", "Critical care, first 30-74 minutes"),
+    ("99292", "Critical care, each additional 30 minutes"),
+    ("36415", "Collection of venous blood by venipuncture"),
     ("71046", "Chest X-ray, 2 views"),
-    ("71045", "Chest X-ray, single view"),
-    ("93000", "Electrocardiogram, 12-lead, with interpretation"),
+    ("71250", "CT chest without contrast"),
+    ("71260", "CT chest with contrast"),
+    ("74176", "CT abdomen and pelvis without contrast"),
+    ("74177", "CT abdomen and pelvis with contrast"),
+    ("70553", "MRI brain with and without contrast"),
+    ("93000", "Electrocardiogram, 12-lead"),
+    ("93306", "Transthoracic echocardiography"),
+    ("93458", "Left heart catheterization"),
+    ("43239", "Esophagogastroduodenoscopy with biopsy"),
+    ("45378", "Colonoscopy, diagnostic"),
+    ("45380", "Colonoscopy with biopsy"),
+    ("47562", "Laparoscopic cholecystectomy"),
+    ("27447", "Total knee arthroplasty"),
+    ("27130", "Total hip arthroplasty"),
+    ("49505", "Inguinal hernia repair"),
+    ("44970", "Laparoscopic appendectomy"),
+    ("33533", "Coronary artery bypass graft, single"),
+    ("92928", "Percutaneous coronary stent placement"),
+    ("31624", "Bronchoscopy with lavage"),
+    ("62322", "Lumbar epidural injection"),
+    ("20610", "Arthrocentesis, major joint"),
+    ("51702", "Insertion of temporary indwelling bladder catheter"),
+    ("36556", "Insertion of central venous catheter"),
+    ("32405", "Thoracentesis"),
+    ("49083", "Paracentesis"),
+    ("59400", "Routine obstetric care, vaginal delivery"),
+    ("59510", "Routine obstetric care, cesarean delivery"),
+    ("90837", "Psychotherapy, 60 minutes"),
+    ("97110", "Therapeutic exercises"),
+    ("96365", "IV infusion, initial, up to 1 hour"),
     ("85025", "Complete blood count with differential"),
     ("80053", "Comprehensive metabolic panel"),
     ("80048", "Basic metabolic panel"),
-    ("80061", "Lipid panel"),
-    ("81001", "Urinalysis, automated with microscopy"),
     ("84443", "Thyroid stimulating hormone"),
     ("83036", "Hemoglobin A1c"),
-    ("82947", "Glucose, blood"),
-    ("74177", "CT abdomen and pelvis with contrast"),
-    ("70553", "MRI brain with and without contrast"),
-    ("73721", "MRI lower extremity joint without contrast"),
-    ("27447", "Total knee arthroplasty"),
-    ("27130", "Total hip arthroplasty"),
-    ("43239", "Upper GI endoscopy with biopsy"),
-    ("45380", "Colonoscopy with biopsy"),
-    ("33533", "Coronary artery bypass, single graft"),
-    ("92928", "Percutaneous coronary stent placement"),
-    ("43846", "Gastric bypass for morbid obesity"),
-    ("47562", "Laparoscopic cholecystectomy"),
-    ("49505", "Inguinal hernia repair"),
-    ("59400", "Routine obstetric care, vaginal delivery"),
-    ("59510", "Routine obstetric care, cesarean delivery"),
-    ("11042", "Debridement, subcutaneous tissue"),
-    ("20610", "Arthrocentesis, major joint"),
-    ("62322", "Lumbar epidural injection"),
-    ("90837", "Psychotherapy, 60 minutes"),
-    ("96372", "Therapeutic injection, subcutaneous or intramuscular"),
-    ("97110", "Therapeutic exercises"),
-    ("97140", "Manual therapy techniques"),
-    ("94640", "Nebulizer treatment"),
-    ("31500", "Intubation, endotracheal"),
-    ("32551", "Chest tube insertion"),
-    ("93306", "Echocardiography, transthoracic, complete"),
-    ("76856", "Pelvic ultrasound, complete"),
-    ("77067", "Screening mammography, bilateral"),
-    ("90471", "Immunization administration"),
+    ("82607", "Vitamin B-12"),
+    ("81001", "Urinalysis, automated, with microscopy"),
+    ("87086", "Urine culture"),
+    ("87070", "Bacterial culture, any source"),
+    ("86900", "Blood typing, ABO"),
+    ("86901", "Blood typing, Rh"),
 ]
 
-MEDICATIONS = [
-    ("Metformin", "Metformin HCl", "Biguanide", "oral", "tablet"),
-    ("Lisinopril", "Lisinopril", "ACE Inhibitor", "oral", "tablet"),
-    ("Atorvastatin", "Atorvastatin Calcium", "HMG-CoA Reductase Inhibitor", "oral", "tablet"),
-    ("Metoprolol Succinate", "Metoprolol Succinate", "Beta Blocker", "oral", "tablet"),
-    ("Omeprazole", "Omeprazole", "Proton Pump Inhibitor", "oral", "capsule"),
-    ("Amlodipine", "Amlodipine Besylate", "Calcium Channel Blocker", "oral", "tablet"),
-    ("Losartan", "Losartan Potassium", "Angiotensin II Receptor Blocker", "oral", "tablet"),
-    ("Levothyroxine", "Levothyroxine Sodium", "Thyroid Hormone", "oral", "tablet"),
-    ("Gabapentin", "Gabapentin", "Anticonvulsant / Neuropathic Pain", "oral", "capsule"),
-    ("Sertraline", "Sertraline HCl", "SSRI", "oral", "tablet"),
-    ("Furosemide", "Furosemide", "Loop Diuretic", "oral", "tablet"),
-    ("Hydrochlorothiazide", "Hydrochlorothiazide", "Thiazide Diuretic", "oral", "tablet"),
-    ("Prednisone", "Prednisone", "Corticosteroid", "oral", "tablet"),
-    ("Albuterol", "Albuterol Sulfate", "Beta-2 Agonist", "inhalation", "nebulizer solution"),
-    ("Insulin Glargine", "Insulin Glargine", "Long-Acting Insulin", "subcutaneous", "injection"),
-    ("Warfarin", "Warfarin Sodium", "Anticoagulant", "oral", "tablet"),
-    ("Heparin", "Heparin Sodium", "Anticoagulant", "intravenous", "injection"),
-    ("Enoxaparin", "Enoxaparin Sodium", "Low Molecular Weight Heparin", "subcutaneous", "injection"),
-    ("Ceftriaxone", "Ceftriaxone Sodium", "Cephalosporin Antibiotic", "intravenous", "injection"),
-    ("Vancomycin", "Vancomycin HCl", "Glycopeptide Antibiotic", "intravenous", "injection"),
-    ("Piperacillin-Tazobactam", "Piperacillin/Tazobactam", "Penicillin/Beta-Lactamase Inhibitor", "intravenous", "injection"),
-    ("Morphine", "Morphine Sulfate", "Opioid Analgesic", "intravenous", "injection"),
-    ("Acetaminophen", "Acetaminophen", "Analgesic/Antipyretic", "oral", "tablet"),
-    ("Ibuprofen", "Ibuprofen", "NSAID", "oral", "tablet"),
-    ("Ondansetron", "Ondansetron HCl", "Antiemetic", "intravenous", "injection"),
-    ("Pantoprazole", "Pantoprazole Sodium", "Proton Pump Inhibitor", "intravenous", "injection"),
-    ("Normal Saline", "Sodium Chloride 0.9%", "IV Fluid", "intravenous", "solution"),
-    ("Lactated Ringers", "Lactated Ringers Solution", "IV Fluid", "intravenous", "solution"),
-    ("Potassium Chloride", "Potassium Chloride", "Electrolyte Replacement", "oral", "tablet"),
-    ("Aspirin", "Acetylsalicylic Acid", "Antiplatelet / NSAID", "oral", "tablet"),
+MEDICATION_LIST = [
+    ("Metformin",              "500 mg",  "PO",   "BID",      "00378-0234-01"),
+    ("Lisinopril",             "10 mg",   "PO",   "Daily",    "00378-0512-01"),
+    ("Atorvastatin",           "40 mg",   "PO",   "Daily",    "00378-3951-01"),
+    ("Amlodipine",             "5 mg",    "PO",   "Daily",    "00378-0045-01"),
+    ("Metoprolol Tartrate",    "25 mg",   "PO",   "BID",      "00378-0086-01"),
+    ("Omeprazole",             "20 mg",   "PO",   "Daily",    "00378-6120-01"),
+    ("Levothyroxine",          "50 mcg",  "PO",   "Daily",    "00378-1805-01"),
+    ("Albuterol",              "2.5 mg",  "INH",  "Q4H PRN",  "00487-9801-01"),
+    ("Furosemide",             "40 mg",   "IV",   "BID",      "00409-6102-01"),
+    ("Warfarin",               "5 mg",    "PO",   "Daily",    "00378-2085-01"),
+    ("Insulin Glargine",       "20 units","SubQ", "Daily",    "00088-2220-33"),
+    ("Clopidogrel",            "75 mg",   "PO",   "Daily",    "00378-1153-01"),
+    ("Gabapentin",             "300 mg",  "PO",   "TID",      "00378-1523-01"),
+    ("Sertraline",             "50 mg",   "PO",   "Daily",    "00378-4187-01"),
+    ("Hydrochlorothiazide",    "25 mg",   "PO",   "Daily",    "00378-0085-01"),
+    ("Pantoprazole",           "40 mg",   "IV",   "Daily",    "00143-9283-01"),
+    ("Losartan",               "50 mg",   "PO",   "Daily",    "00378-0185-01"),
+    ("Acetaminophen",          "650 mg",  "PO",   "Q6H PRN",  "00904-1982-60"),
+    ("Ibuprofen",              "400 mg",  "PO",   "Q6H PRN",  "00904-7915-60"),
+    ("Aspirin",                "81 mg",   "PO",   "Daily",    "00904-2013-60"),
+    ("Ceftriaxone",            "1 g",     "IV",   "Daily",    "00409-7337-01"),
+    ("Vancomycin",             "1 g",     "IV",   "Q12H",     "00409-6509-01"),
+    ("Piperacillin-Tazobactam","4.5 g",   "IV",   "Q6H",      "00206-8921-02"),
+    ("Heparin",                "5000 units","SubQ","Q8H",      "00409-2720-01"),
+    ("Enoxaparin",             "40 mg",   "SubQ", "Daily",    "00075-0621-01"),
+    ("Morphine",               "2 mg",    "IV",   "Q4H PRN",  "00409-1712-01"),
+    ("Hydromorphone",          "0.5 mg",  "IV",   "Q3H PRN",  "00409-1302-01"),
+    ("Ondansetron",            "4 mg",    "IV",   "Q6H PRN",  "00409-4715-01"),
+    ("Famotidine",             "20 mg",   "IV",   "BID",      "00409-3375-01"),
+    ("Dexamethasone",          "4 mg",    "IV",   "Q6H",      "00409-0619-01"),
+    ("Prednisone",             "40 mg",   "PO",   "Daily",    "00378-0145-01"),
+    ("Amoxicillin",            "500 mg",  "PO",   "TID",      "00093-4150-01"),
+    ("Azithromycin",           "250 mg",  "PO",   "Daily",    "00093-7169-01"),
+    ("Ciprofloxacin",          "500 mg",  "PO",   "BID",      "00093-0862-01"),
+    ("Fluconazole",            "200 mg",  "PO",   "Daily",    "00093-7238-01"),
+    ("Potassium Chloride",     "20 mEq",  "PO",   "BID",      "00904-5688-60"),
+    ("Magnesium Oxide",        "400 mg",  "PO",   "Daily",    "00904-5700-60"),
+    ("Docusate Sodium",        "100 mg",  "PO",   "BID",      "00536-3755-01"),
+    ("Senna",                  "8.6 mg",  "PO",   "Daily PRN","00904-5200-60"),
+    ("Lorazepam",              "1 mg",    "PO",   "Q8H PRN",  "00378-2321-01"),
+    ("Diazepam",               "5 mg",    "PO",   "Q8H PRN",  "00378-0345-01"),
+    ("Carvedilol",             "12.5 mg", "PO",   "BID",      "00378-0937-01"),
+    ("Spironolactone",         "25 mg",   "PO",   "Daily",    "00378-0039-01"),
+    ("Digoxin",                "0.125 mg","PO",   "Daily",    "00378-0171-01"),
+    ("Diltiazem",              "30 mg",   "PO",   "QID",      "00378-0195-01"),
+    ("Amiodarone",             "200 mg",  "PO",   "Daily",    "00378-6140-01"),
+    ("Nitroglycerin",          "0.4 mg",  "SL",   "Q5min PRN","00591-3615-01"),
+    ("Cephalexin",             "500 mg",  "PO",   "QID",      "00093-3145-01"),
+    ("Trimethoprim-Sulfa",     "160/800 mg","PO", "BID",      "00093-0359-01"),
+    ("Levofloxacin",           "750 mg",  "IV",   "Daily",    "00409-3476-01"),
 ]
 
-# Lab tests with realistic reference ranges and units
 LAB_TESTS = [
-    # CBC
-    ("WBC", "6690-2", "x10^3/uL", 4.5, 11.0, lambda: round(random.gauss(7.5, 3.0), 1)),
-    ("RBC", "789-8", "x10^6/uL", 4.0, 5.5, lambda: round(random.gauss(4.7, 0.6), 2)),
-    ("Hemoglobin", "718-7", "g/dL", 12.0, 17.5, lambda: round(random.gauss(14.0, 2.0), 1)),
-    ("Hematocrit", "4544-3", "%", 36.0, 50.0, lambda: round(random.gauss(42.0, 5.0), 1)),
-    ("Platelet Count", "777-3", "x10^3/uL", 150.0, 400.0, lambda: round(random.gauss(250.0, 70.0))),
-    ("MCV", "787-2", "fL", 80.0, 100.0, lambda: round(random.gauss(90.0, 6.0), 1)),
-    # BMP
-    ("Sodium", "2951-2", "mEq/L", 136.0, 145.0, lambda: round(random.gauss(140.0, 3.0))),
-    ("Potassium", "2823-3", "mEq/L", 3.5, 5.0, lambda: round(random.gauss(4.2, 0.5), 1)),
-    ("Chloride", "2075-0", "mEq/L", 98.0, 106.0, lambda: round(random.gauss(102.0, 3.0))),
-    ("CO2", "2028-9", "mEq/L", 22.0, 29.0, lambda: round(random.gauss(25.0, 3.0))),
-    ("BUN", "3094-0", "mg/dL", 7.0, 20.0, lambda: round(random.gauss(15.0, 6.0))),
-    ("Creatinine", "2160-0", "mg/dL", 0.6, 1.2, lambda: round(random.gauss(1.0, 0.4), 2)),
-    ("Glucose", "2345-7", "mg/dL", 70.0, 100.0, lambda: round(random.gauss(105.0, 35.0))),
-    # CMP additional
-    ("Calcium", "17861-6", "mg/dL", 8.5, 10.5, lambda: round(random.gauss(9.5, 0.5), 1)),
-    ("Total Protein", "2885-2", "g/dL", 6.0, 8.3, lambda: round(random.gauss(7.0, 0.6), 1)),
-    ("Albumin", "1751-7", "g/dL", 3.5, 5.0, lambda: round(random.gauss(4.0, 0.5), 1)),
-    ("Bilirubin Total", "1975-2", "mg/dL", 0.1, 1.2, lambda: round(random.gauss(0.7, 0.4), 1)),
-    ("ALT", "1742-6", "U/L", 7.0, 56.0, lambda: round(random.gauss(28.0, 15.0))),
-    ("AST", "1920-8", "U/L", 10.0, 40.0, lambda: round(random.gauss(25.0, 12.0))),
-    ("ALP", "6768-6", "U/L", 44.0, 147.0, lambda: round(random.gauss(80.0, 30.0))),
-    # Lipid panel
-    ("Total Cholesterol", "2093-3", "mg/dL", 0.0, 200.0, lambda: round(random.gauss(195.0, 40.0))),
-    ("LDL Cholesterol", "2089-1", "mg/dL", 0.0, 100.0, lambda: round(random.gauss(110.0, 35.0))),
-    ("HDL Cholesterol", "2085-9", "mg/dL", 40.0, 60.0, lambda: round(random.gauss(52.0, 14.0))),
-    ("Triglycerides", "2571-8", "mg/dL", 0.0, 150.0, lambda: round(random.gauss(140.0, 60.0))),
-    # Coag
-    ("PT", "5902-2", "seconds", 11.0, 13.5, lambda: round(random.gauss(12.5, 2.0), 1)),
-    ("INR", "6301-6", "", 0.8, 1.1, lambda: round(random.gauss(1.1, 0.4), 1)),
-    ("PTT", "3173-2", "seconds", 25.0, 35.0, lambda: round(random.gauss(30.0, 5.0), 1)),
-    # UA
-    ("Urinalysis pH", "2756-5", "", 5.0, 8.0, lambda: round(random.gauss(6.0, 0.8), 1)),
-    ("Urinalysis Specific Gravity", "2965-2", "", 1.005, 1.030, lambda: round(random.gauss(1.020, 0.008), 3)),
-    # Special
-    ("Troponin I", "10839-9", "ng/mL", 0.0, 0.04, lambda: round(random.expovariate(10.0), 3)),
-    ("BNP", "30934-4", "pg/mL", 0.0, 100.0, lambda: round(random.expovariate(0.005), 1)),
-    ("HbA1c", "4548-4", "%", 4.0, 5.6, lambda: round(random.gauss(6.2, 1.5), 1)),
-    ("TSH", "3016-3", "mIU/L", 0.4, 4.0, lambda: round(random.gauss(2.5, 1.5), 2)),
-    ("Procalcitonin", "75241-0", "ng/mL", 0.0, 0.1, lambda: round(random.expovariate(5.0), 2)),
-    ("Lactate", "2524-7", "mmol/L", 0.5, 2.0, lambda: round(random.gauss(1.5, 1.0), 1)),
-    ("Magnesium", "19123-9", "mg/dL", 1.7, 2.2, lambda: round(random.gauss(2.0, 0.3), 1)),
-    ("Phosphorus", "2777-1", "mg/dL", 2.5, 4.5, lambda: round(random.gauss(3.5, 0.7), 1)),
+    # (test_name, test_code, result_unit, ref_low, ref_high, mean, std)
+    ("WBC",              "6690-2",  "10^3/uL",  4.5,  11.0,  7.5,  2.0),
+    ("RBC",              "789-8",   "10^6/uL",  4.2,   5.9,  4.8,  0.5),
+    ("Hemoglobin",       "718-7",   "g/dL",    12.0,  17.5, 14.0,  1.5),
+    ("Hematocrit",       "4544-3",  "%",       36.0,  51.0, 42.0,  4.0),
+    ("Platelets",        "777-3",   "10^3/uL",150.0, 400.0,250.0, 60.0),
+    ("Sodium",           "2951-2",  "mEq/L",  136.0, 145.0,140.0,  3.0),
+    ("Potassium",        "2823-3",  "mEq/L",    3.5,   5.0,  4.2,  0.4),
+    ("Chloride",         "2075-0",  "mEq/L",   98.0, 106.0,102.0,  3.0),
+    ("CO2",              "2028-9",  "mEq/L",   23.0,  29.0, 26.0,  2.0),
+    ("BUN",              "3094-0",  "mg/dL",    7.0,  20.0, 14.0,  4.0),
+    ("Creatinine",       "2160-0",  "mg/dL",    0.7,   1.3,  1.0,  0.3),
+    ("Glucose",          "2345-7",  "mg/dL",   70.0, 100.0, 95.0, 25.0),
+    ("Calcium",          "17861-6", "mg/dL",    8.5,  10.5,  9.5,  0.5),
+    ("Total Protein",    "2885-2",  "g/dL",     6.0,   8.3,  7.0,  0.5),
+    ("Albumin",          "1751-7",  "g/dL",     3.5,   5.5,  4.2,  0.5),
+    ("Total Bilirubin",  "1975-2",  "mg/dL",    0.1,   1.2,  0.7,  0.4),
+    ("ALT",              "1742-6",  "U/L",      7.0,  56.0, 25.0, 12.0),
+    ("AST",              "1920-8",  "U/L",     10.0,  40.0, 22.0, 10.0),
+    ("Alkaline Phosphatase","6768-6","U/L",    44.0, 147.0, 80.0, 25.0),
+    ("HbA1c",            "4548-4",  "%",        4.0,   5.6,  5.8,  1.2),
+    ("Troponin I",       "10839-9", "ng/mL",    0.00,  0.04, 0.02, 0.05),
+    ("TSH",              "3016-3",  "mIU/L",    0.27,  4.20, 2.0,  1.0),
+    ("Free T4",          "3024-7",  "ng/dL",    0.9,   1.7,  1.3,  0.2),
+    ("INR",              "6301-6",  "",          0.8,   1.1,  1.0,  0.2),
+    ("PT",               "5902-2",  "sec",     11.0,  13.5, 12.0,  1.0),
+    ("PTT",              "3173-2",  "sec",     25.0,  35.0, 30.0,  4.0),
+    ("D-Dimer",          "48065-7", "ng/mL FEU",0.0, 500.0,200.0,200.0),
+    ("Lactate",          "2524-7",  "mmol/L",   0.5,   2.2,  1.2,  0.6),
+    ("BNP",              "30934-4", "pg/mL",    0.0, 100.0, 50.0, 80.0),
+    ("Procalcitonin",    "75241-0", "ng/mL",    0.0,   0.1,  0.05, 0.3),
+    ("CRP",              "1988-5",  "mg/L",     0.0,   3.0,  1.5,  3.0),
+    ("ESR",              "4537-7",  "mm/hr",    0.0,  20.0, 10.0, 10.0),
+    ("Magnesium",        "19123-9", "mg/dL",    1.7,   2.2,  2.0,  0.2),
+    ("Phosphorus",       "2777-1",  "mg/dL",    2.5,   4.5,  3.5,  0.6),
+    ("Uric Acid",        "3084-1",  "mg/dL",    3.0,   7.0,  5.0,  1.2),
+    ("LDH",              "2532-0",  "U/L",    140.0, 280.0,200.0, 40.0),
+    ("Lipase",           "3040-3",  "U/L",     10.0,  73.0, 30.0, 20.0),
+    ("Amylase",          "1798-8",  "U/L",     28.0, 100.0, 55.0, 20.0),
+    ("Total Cholesterol","2093-3",  "mg/dL",    0.0, 200.0,190.0, 35.0),
+    ("LDL",              "2089-1",  "mg/dL",    0.0, 100.0,110.0, 30.0),
+    ("HDL",              "2085-9",  "mg/dL",   40.0,  60.0, 50.0, 12.0),
+    ("Triglycerides",    "2571-8",  "mg/dL",    0.0, 150.0,130.0, 60.0),
+    ("Ferritin",         "2276-4",  "ng/mL",   12.0, 300.0,100.0, 80.0),
+    ("Iron",             "2498-4",  "mcg/dL",  60.0, 170.0,100.0, 30.0),
+    ("TIBC",             "2500-7",  "mcg/dL", 250.0, 370.0,310.0, 30.0),
+    ("Vitamin D",        "1989-3",  "ng/mL",   30.0, 100.0, 35.0, 15.0),
+    ("PSA",              "2857-1",  "ng/mL",    0.0,   4.0,  1.5,  2.0),
+    ("Urinalysis pH",    "2756-5",  "",          5.0,   8.0,  6.0,  0.8),
+    ("Urine Specific Gravity","2965-2","",       1.005, 1.030,1.015,0.007),
 ]
 
 ALLERGENS = [
-    ("Penicillin", "drug"), ("Sulfa drugs", "drug"), ("Aspirin", "drug"),
-    ("Codeine", "drug"), ("NSAIDs", "drug"), ("Morphine", "drug"),
-    ("Latex", "environmental"), ("Iodine contrast dye", "drug"),
-    ("Cephalosporins", "drug"), ("Fluoroquinolones", "drug"),
-    ("ACE Inhibitors", "drug"), ("Erythromycin", "drug"),
-    ("Peanuts", "food"), ("Shellfish", "food"), ("Eggs", "food"),
-    ("Tree nuts", "food"), ("Milk", "food"), ("Soy", "food"),
-    ("Wheat", "food"), ("Bee stings", "environmental"),
-    ("Dust mites", "environmental"), ("Pollen", "environmental"),
-    ("Mold", "environmental"), ("Pet dander", "environmental"),
-    ("Tetracycline", "drug"), ("Metformin", "drug"),
-    ("Lisinopril", "drug"), ("Hydrocodone", "drug"),
+    ("Penicillin",     "drug",          "Rash",              "moderate"),
+    ("Sulfa Drugs",    "drug",          "Hives",             "moderate"),
+    ("Aspirin",        "drug",          "GI upset",          "mild"),
+    ("Codeine",        "drug",          "Nausea, vomiting",  "mild"),
+    ("Morphine",       "drug",          "Itching",           "mild"),
+    ("Iodine Contrast","drug",          "Anaphylaxis",       "severe"),
+    ("Latex",          "environmental", "Contact dermatitis", "moderate"),
+    ("Pollen",         "environmental", "Rhinitis",          "mild"),
+    ("Dust Mites",     "environmental", "Asthma",            "moderate"),
+    ("Peanuts",        "food",          "Anaphylaxis",       "severe"),
+    ("Shellfish",      "food",          "Hives",             "moderate"),
+    ("Eggs",           "food",          "Hives",             "mild"),
+    ("Milk",           "food",          "GI upset",          "mild"),
+    ("Soy",            "food",          "Rash",              "mild"),
+    ("Tree Nuts",      "food",          "Anaphylaxis",       "severe"),
+    ("Wheat",          "food",          "GI upset",          "mild"),
+    ("Lisinopril",     "drug",          "Angioedema",        "severe"),
+    ("Amoxicillin",    "drug",          "Rash",              "moderate"),
+    ("Erythromycin",   "drug",          "Nausea",            "mild"),
+    ("NSAIDs",         "drug",          "Bronchospasm",      "moderate"),
+    ("ACE Inhibitors", "drug",          "Cough",             "mild"),
+    ("Bee Stings",     "environmental", "Anaphylaxis",       "severe"),
+    ("Mold",           "environmental", "Rhinitis",          "mild"),
+    ("Cat Dander",     "environmental", "Asthma",            "moderate"),
+    ("Tetracycline",   "drug",          "Photosensitivity",  "mild"),
 ]
 
-ALLERGY_REACTIONS = [
-    "Rash", "Hives", "Anaphylaxis", "Swelling", "Nausea",
-    "Shortness of breath", "Itching", "Throat tightness",
-    "Gastrointestinal upset", "Dizziness", "Angioedema",
-    "Bronchospasm", "Hypotension", "Stevens-Johnson Syndrome",
+DEPARTMENTS_DATA = [
+    ("Emergency Department",  "ED",    "1", "Main",             "Dr. Sarah Mitchell",  "(555) 100-4100"),
+    ("Intensive Care Unit",   "ICU",   "3", "Main",             "Dr. James Rodriguez", "(555) 100-4200"),
+    ("NICU",                  "NICU",  "3", "Women's Pavilion", "Dr. Amy Patel",       "(555) 100-4250"),
+    ("Med-Surg",              "MSURG", "4", "Main",             "Dr. Karen Liu",       "(555) 100-4300"),
+    ("Cardiology",            "CARD",  "5", "Heart Center",     "Dr. Robert Kim",      "(555) 100-4400"),
+    ("Oncology",              "ONC",   "6", "Cancer Center",    "Dr. Angela Foster",   "(555) 100-4500"),
+    ("Orthopedics",           "ORTHO", "4", "Main",             "Dr. William Torres",  "(555) 100-4600"),
+    ("Neurology",             "NEURO", "5", "Main",             "Dr. Patricia Adams",  "(555) 100-4700"),
+    ("Radiology",             "RAD",   "1", "Main",             "Dr. David Nakamura",  "(555) 100-4800"),
+    ("Laboratory",            "LAB",   "B1","Main",             "Dr. Jennifer Walsh",  "(555) 100-4900"),
+    ("Pharmacy",              "PHARM", "1", "Main",             "Dr. Thomas Green",    "(555) 100-5000"),
+    ("OB/GYN",                "OBGYN", "2", "Women's Pavilion", "Dr. Lisa Patel",      "(555) 100-5100"),
+    ("Pediatrics",            "PEDS",  "2", "Main",             "Dr. Michael Chen",    "(555) 100-5200"),
+    ("Behavioral Health",     "BH",    "6", "Behavioral Health","Dr. Steven Wright",   "(555) 100-5300"),
+    ("Rehab",                 "REHAB", "1", "Outpatient",       "Dr. Maria Gonzalez",  "(555) 100-5400"),
 ]
+
+SPECIALTIES_BY_DEPT = {
+    1:  ["Emergency Medicine"],
+    2:  ["Critical Care Medicine", "Pulmonary Critical Care"],
+    3:  ["Neonatology"],
+    4:  ["Internal Medicine", "Hospitalist Medicine", "Family Medicine"],
+    5:  ["Cardiology", "Interventional Cardiology", "Electrophysiology"],
+    6:  ["Medical Oncology", "Hematology-Oncology", "Radiation Oncology"],
+    7:  ["Orthopedic Surgery", "Sports Medicine"],
+    8:  ["Neurology", "Neurosurgery"],
+    9:  ["Diagnostic Radiology", "Interventional Radiology"],
+    10: ["Pathology", "Clinical Pathology"],
+    11: ["Clinical Pharmacy"],
+    12: ["Obstetrics & Gynecology", "Maternal-Fetal Medicine"],
+    13: ["Pediatrics", "Pediatric Emergency Medicine"],
+    14: ["Psychiatry", "Addiction Medicine"],
+    15: ["Physical Medicine & Rehabilitation"],
+}
+
+CREDENTIALS = ["MD", "DO", "RN", "NP", "PA", "PharmD"]
+
+ENCOUNTER_TYPES = ["inpatient", "outpatient", "ED", "observation", "telehealth"]
 
 CHIEF_COMPLAINTS = [
-    "Chest pain", "Shortness of breath", "Abdominal pain",
-    "Headache", "Back pain", "Fever", "Cough", "Nausea and vomiting",
-    "Dizziness", "Weakness", "Fall", "Altered mental status",
-    "Leg pain", "Difficulty breathing", "Palpitations",
-    "Urinary symptoms", "Wound evaluation", "Anxiety",
-    "Suicidal ideation", "Syncope", "Seizure", "Chest tightness",
-    "Right arm pain", "Left leg swelling", "Rectal bleeding",
-    "Flank pain", "Sore throat", "Hip pain", "Knee pain",
+    "Chest pain", "Shortness of breath", "Abdominal pain", "Headache",
+    "Back pain", "Fever", "Cough", "Dizziness", "Nausea/vomiting",
+    "Weakness", "Altered mental status", "Syncope", "Palpitations",
+    "Leg pain", "Swelling", "Rash", "Fall", "Laceration",
+    "Joint pain", "Urinary symptoms", "Sore throat", "Anxiety",
+    "Bleeding", "Difficulty breathing", "Flank pain", "Hip pain",
+    "Seizure", "Confusion", "Chest tightness", "Fatigue",
+]
+
+DISPOSITIONS = [
+    "Discharged home", "Discharged to SNF", "Discharged to rehab",
+    "Discharged with home health", "Transferred to another facility",
+    "Left against medical advice", "Expired", None,
 ]
 
 INSURANCE_PLANS = [
-    ("Blue Cross Blue Shield PPO", "PPO", "Blue Cross Blue Shield", "GRP-100234"),
-    ("Aetna HMO", "HMO", "Aetna", "GRP-200567"),
-    ("UnitedHealthcare Choice Plus", "PPO", "UnitedHealthcare", "GRP-300891"),
-    ("Cigna Open Access Plus", "PPO", "Cigna", "GRP-400123"),
-    ("Medicare Part A", "Medicare", "CMS", "MCARE-A"),
-    ("Medicare Part B", "Medicare", "CMS", "MCARE-B"),
-    ("Medicaid", "Medicaid", "State Medicaid", "MCAID-001"),
-    ("Humana Gold Plus", "HMO", "Humana", "GRP-500456"),
-    ("Kaiser Permanente", "HMO", "Kaiser", "GRP-600789"),
-    ("Tricare Prime", "Commercial", "Department of Defense", "TRI-001"),
+    "Blue Cross Blue Shield PPO", "Aetna HMO", "UnitedHealthcare PPO",
+    "Cigna EPO", "Humana Medicare Advantage", "Kaiser Permanente HMO",
+    "Medicare Part A", "Medicare Part B", "Medicaid",
+    "Tricare Standard", "Anthem Blue Cross", "Molina Healthcare",
+    "Centene", "Self-Pay", "WellCare", "Oscar Health",
 ]
 
-SYSTEMS = [
-    ("Epic EHR", "operational"), ("Cerner Lab Interface", "operational"),
-    ("PACS Imaging", "operational"), ("Pharmacy Dispensing", "operational"),
-    ("Patient Portal", "operational"), ("HL7 Interface Engine", "operational"),
-    ("Bed Management System", "operational"), ("Billing System", "operational"),
+DENIAL_REASONS = [
+    "Missing prior authorization",
+    "Service not covered under plan",
+    "Incorrect coding",
+    "Timely filing limit exceeded",
+    "Duplicate claim",
+    "Patient not eligible on date of service",
+    "Non-covered diagnosis",
+    "Exceeded benefit maximum",
+    "Coordination of benefits required",
+    "Medical necessity not established",
 ]
 
-QUALITY_MEASURES = [
-    ("SEP-1", "QM-SEP1", "Severe Sepsis and Septic Shock Management Bundle"),
-    ("VTE-1", "QM-VTE1", "Venous Thromboembolism Prophylaxis"),
-    ("VTE-2", "QM-VTE2", "ICU Venous Thromboembolism Prophylaxis"),
-    ("STK-4", "QM-STK4", "Thrombolytic Therapy"),
-    ("EDTC-1", "QM-EDTC1", "Emergency Department Transfer Communication"),
-    ("PC-01", "QM-PC01", "Elective Delivery < 39 Weeks"),
-    ("IMM-2", "QM-IMM2", "Influenza Immunization"),
-    ("HF-1", "QM-HF1", "Heart Failure: Discharge Instructions"),
-    ("PN-6", "QM-PN6", "Initial Antibiotic Selection for Community-Acquired Pneumonia"),
-    ("CAUTI", "QM-CAUTI", "Catheter-Associated Urinary Tract Infection Rate"),
-    ("CLABSI", "QM-CLABSI", "Central Line-Associated Bloodstream Infection Rate"),
-    ("MRSA", "QM-MRSA", "MRSA Bacteremia Rate"),
-    ("CDI", "QM-CDI", "C. difficile Infection Rate"),
-    ("SSI", "QM-SSI", "Surgical Site Infection Rate"),
-    ("PSI-90", "QM-PSI90", "Patient Safety and Adverse Events Composite"),
-    ("HCAHPS", "QM-HCAHPS", "Hospital Consumer Assessment of Healthcare Providers"),
-    ("MORT-30-AMI", "QM-MAMI", "30-Day Mortality Rate for Acute Myocardial Infarction"),
-    ("MORT-30-HF", "QM-MHF", "30-Day Mortality Rate for Heart Failure"),
-    ("READM-30-HF", "QM-RHF", "30-Day Readmission Rate for Heart Failure"),
-    ("ED-2b", "QM-ED2B", "ED Admit Decision Time to ED Departure for Admitted Patients"),
+HL7_MESSAGE_TYPES = [
+    ("ADT", "A01", "Admit/Visit Notification"),
+    ("ADT", "A02", "Transfer a Patient"),
+    ("ADT", "A03", "Discharge/End Visit"),
+    ("ADT", "A04", "Register a Patient"),
+    ("ADT", "A08", "Update Patient Information"),
+    ("ORM", "O01", "General Order Message"),
+    ("ORU", "R01", "Unsolicited Observation Result"),
+    ("SIU", "S12", "Schedule Information Unsolicited"),
+    ("DFT", "P03", "Post Detail Financial Transaction"),
+    ("MDM", "T02", "Original Document Notification"),
+]
+
+SENDING_SYSTEMS = [
+    "LabCorp_Interface", "Quest_Interface", "RadPACS_v4",
+    "PharmacyRx_Pro", "BedMgmt_2000", "Registration_Portal",
+    "Cardio_Monitor_Hub", "OR_Scheduling_v3", "BillingEngine_5",
+    "ED_Tracker",
+]
+
+RECEIVING_SYSTEMS = [
+    "MainEHR_Prod", "DataWarehouse", "ClinicalReporting",
+    "HIE_Gateway", "ArchiveSystem",
 ]
 
 
 # ---------------------------------------------------------------------------
-# Schema definition
-# ---------------------------------------------------------------------------
-
-SCHEMA_SQL = """
-PRAGMA journal_mode=WAL;
-PRAGMA foreign_keys=ON;
-
-CREATE TABLE IF NOT EXISTS departments (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    name            TEXT NOT NULL,
-    code            TEXT NOT NULL UNIQUE,
-    floor           INTEGER,
-    building        TEXT,
-    phone           TEXT,
-    manager_name    TEXT,
-    bed_count       INTEGER
-);
-
-CREATE TABLE IF NOT EXISTS insurance_plans (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    plan_name       TEXT NOT NULL,
-    plan_type       TEXT NOT NULL CHECK (plan_type IN ('HMO','PPO','Medicare','Medicaid','Commercial')),
-    payer_name      TEXT NOT NULL,
-    group_number    TEXT
-);
-
-CREATE TABLE IF NOT EXISTS providers (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    npi             TEXT NOT NULL UNIQUE,
-    first_name      TEXT NOT NULL,
-    last_name       TEXT NOT NULL,
-    credentials     TEXT NOT NULL,
-    specialty       TEXT NOT NULL,
-    department_id   INTEGER NOT NULL REFERENCES departments(id),
-    email           TEXT,
-    phone           TEXT,
-    active          INTEGER NOT NULL DEFAULT 1
-);
-
-CREATE TABLE IF NOT EXISTS patients (
-    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
-    mrn                     TEXT NOT NULL UNIQUE,
-    first_name              TEXT NOT NULL,
-    last_name               TEXT NOT NULL,
-    dob                     TEXT NOT NULL,
-    gender                  TEXT NOT NULL,
-    race                    TEXT,
-    ethnicity               TEXT,
-    ssn_last4               TEXT,
-    address                 TEXT,
-    city                    TEXT,
-    state                   TEXT,
-    zip                     TEXT,
-    phone                   TEXT,
-    email                   TEXT,
-    insurance_id            INTEGER REFERENCES insurance_plans(id),
-    primary_care_provider_id INTEGER REFERENCES providers(id),
-    created_at              TEXT NOT NULL,
-    status                  TEXT NOT NULL DEFAULT 'active'
-                            CHECK (status IN ('active','inactive','deceased'))
-);
-
-CREATE TABLE IF NOT EXISTS encounters (
-    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
-    patient_id              INTEGER NOT NULL REFERENCES patients(id),
-    provider_id             INTEGER NOT NULL REFERENCES providers(id),
-    department_id           INTEGER NOT NULL REFERENCES departments(id),
-    encounter_type          TEXT NOT NULL
-                            CHECK (encounter_type IN ('inpatient','outpatient','emergency','observation')),
-    admit_date              TEXT NOT NULL,
-    discharge_date          TEXT,
-    status                  TEXT NOT NULL
-                            CHECK (status IN ('active','discharged','transferred')),
-    chief_complaint         TEXT,
-    admission_source        TEXT,
-    discharge_disposition   TEXT
-);
-
-CREATE TABLE IF NOT EXISTS diagnoses (
-    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
-    encounter_id            INTEGER NOT NULL REFERENCES encounters(id),
-    patient_id              INTEGER NOT NULL REFERENCES patients(id),
-    icd10_code              TEXT NOT NULL,
-    description             TEXT NOT NULL,
-    diagnosis_type          TEXT NOT NULL
-                            CHECK (diagnosis_type IN ('primary','secondary','admitting')),
-    diagnosed_by_provider_id INTEGER NOT NULL REFERENCES providers(id),
-    diagnosis_date          TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS procedures (
-    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
-    encounter_id            INTEGER NOT NULL REFERENCES encounters(id),
-    patient_id              INTEGER NOT NULL REFERENCES patients(id),
-    cpt_code                TEXT NOT NULL,
-    description             TEXT NOT NULL,
-    performing_provider_id  INTEGER NOT NULL REFERENCES providers(id),
-    procedure_date          TEXT NOT NULL,
-    status                  TEXT NOT NULL DEFAULT 'completed'
-);
-
-CREATE TABLE IF NOT EXISTS medications (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    name            TEXT NOT NULL,
-    generic_name    TEXT NOT NULL,
-    drug_class      TEXT NOT NULL,
-    route           TEXT NOT NULL,
-    form            TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS medication_orders (
-    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
-    encounter_id            INTEGER NOT NULL REFERENCES encounters(id),
-    patient_id              INTEGER NOT NULL REFERENCES patients(id),
-    medication_id           INTEGER NOT NULL REFERENCES medications(id),
-    ordering_provider_id    INTEGER NOT NULL REFERENCES providers(id),
-    dose                    TEXT NOT NULL,
-    unit                    TEXT NOT NULL,
-    frequency               TEXT NOT NULL,
-    route                   TEXT NOT NULL,
-    start_date              TEXT NOT NULL,
-    end_date                TEXT,
-    status                  TEXT NOT NULL DEFAULT 'active'
-                            CHECK (status IN ('active','completed','discontinued','held'))
-);
-
-CREATE TABLE IF NOT EXISTS lab_results (
-    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
-    encounter_id            INTEGER NOT NULL REFERENCES encounters(id),
-    patient_id              INTEGER NOT NULL REFERENCES patients(id),
-    ordering_provider_id    INTEGER NOT NULL REFERENCES providers(id),
-    test_name               TEXT NOT NULL,
-    test_code               TEXT NOT NULL,
-    value                   TEXT NOT NULL,
-    unit                    TEXT NOT NULL,
-    reference_range_low     REAL,
-    reference_range_high    REAL,
-    abnormal_flag           TEXT DEFAULT 'N'
-                            CHECK (abnormal_flag IN ('N','L','H','C')),
-    result_date             TEXT NOT NULL,
-    status                  TEXT NOT NULL DEFAULT 'final'
-                            CHECK (status IN ('final','preliminary','corrected'))
-);
-
-CREATE TABLE IF NOT EXISTS vital_signs (
-    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
-    encounter_id            INTEGER NOT NULL REFERENCES encounters(id),
-    patient_id              INTEGER NOT NULL REFERENCES patients(id),
-    recorded_by_provider_id INTEGER NOT NULL REFERENCES providers(id),
-    temperature             REAL,
-    heart_rate              INTEGER,
-    blood_pressure_systolic INTEGER,
-    blood_pressure_diastolic INTEGER,
-    respiratory_rate        INTEGER,
-    spo2                    REAL,
-    pain_scale              INTEGER,
-    recorded_at             TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS allergies (
-    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
-    patient_id              INTEGER NOT NULL REFERENCES patients(id),
-    allergen                TEXT NOT NULL,
-    reaction                TEXT,
-    severity                TEXT NOT NULL
-                            CHECK (severity IN ('mild','moderate','severe')),
-    allergy_type            TEXT NOT NULL
-                            CHECK (allergy_type IN ('drug','food','environmental')),
-    documented_date         TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS orders (
-    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
-    encounter_id            INTEGER NOT NULL REFERENCES encounters(id),
-    patient_id              INTEGER NOT NULL REFERENCES patients(id),
-    ordering_provider_id    INTEGER NOT NULL REFERENCES providers(id),
-    order_type              TEXT NOT NULL
-                            CHECK (order_type IN ('lab','imaging','consult','diet','activity')),
-    order_text              TEXT NOT NULL,
-    priority                TEXT NOT NULL DEFAULT 'routine'
-                            CHECK (priority IN ('routine','urgent','stat')),
-    status                  TEXT NOT NULL DEFAULT 'ordered'
-                            CHECK (status IN ('ordered','in_progress','completed','cancelled')),
-    ordered_at              TEXT NOT NULL,
-    completed_at            TEXT
-);
-
-CREATE TABLE IF NOT EXISTS beds (
-    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
-    department_id           INTEGER NOT NULL REFERENCES departments(id),
-    bed_number              TEXT NOT NULL,
-    room_number             TEXT NOT NULL,
-    status                  TEXT NOT NULL DEFAULT 'available'
-                            CHECK (status IN ('available','occupied','cleaning','maintenance')),
-    current_patient_id      INTEGER REFERENCES patients(id)
-);
-
-CREATE TABLE IF NOT EXISTS staff_schedule (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    provider_id     INTEGER NOT NULL REFERENCES providers(id),
-    shift_date      TEXT NOT NULL,
-    shift_start     TEXT NOT NULL,
-    shift_end       TEXT NOT NULL,
-    department_id   INTEGER NOT NULL REFERENCES departments(id),
-    role            TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS audit_log (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id         INTEGER,
-    action          TEXT NOT NULL,
-    table_name      TEXT NOT NULL,
-    record_id       INTEGER,
-    old_value       TEXT,
-    new_value       TEXT,
-    timestamp       TEXT NOT NULL,
-    ip_address      TEXT
-);
-
-CREATE TABLE IF NOT EXISTS clinical_alerts (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    patient_id      INTEGER NOT NULL REFERENCES patients(id),
-    encounter_id    INTEGER REFERENCES encounters(id),
-    alert_type      TEXT NOT NULL
-                    CHECK (alert_type IN ('drug_interaction','allergy','critical_lab','fall_risk')),
-    severity        TEXT NOT NULL,
-    message         TEXT NOT NULL,
-    status          TEXT NOT NULL DEFAULT 'active'
-                    CHECK (status IN ('active','acknowledged','resolved')),
-    created_at      TEXT NOT NULL,
-    acknowledged_by INTEGER REFERENCES providers(id),
-    acknowledged_at TEXT
-);
-
-CREATE TABLE IF NOT EXISTS quality_measures (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    measure_name        TEXT NOT NULL,
-    measure_code        TEXT NOT NULL,
-    numerator           INTEGER NOT NULL,
-    denominator         INTEGER NOT NULL,
-    rate                REAL NOT NULL,
-    reporting_period    TEXT NOT NULL,
-    department_id       INTEGER REFERENCES departments(id)
-);
-
-CREATE TABLE IF NOT EXISTS hl7_messages (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    message_type        TEXT NOT NULL
-                        CHECK (message_type IN ('ADT','ORM','ORU','DFT')),
-    direction           TEXT NOT NULL
-                        CHECK (direction IN ('inbound','outbound')),
-    sending_facility    TEXT NOT NULL,
-    receiving_facility  TEXT NOT NULL,
-    message_content     TEXT NOT NULL,
-    status              TEXT NOT NULL DEFAULT 'received'
-                        CHECK (status IN ('received','processed','error')),
-    created_at          TEXT NOT NULL,
-    processed_at        TEXT,
-    error_message       TEXT
-);
-
-CREATE TABLE IF NOT EXISTS system_status (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    system_name     TEXT NOT NULL,
-    status          TEXT NOT NULL
-                    CHECK (status IN ('operational','degraded','down')),
-    last_check      TEXT NOT NULL,
-    response_time_ms INTEGER,
-    notes           TEXT
-);
-
--- Indexes for common query patterns
-CREATE INDEX IF NOT EXISTS idx_patients_mrn ON patients(mrn);
-CREATE INDEX IF NOT EXISTS idx_patients_name ON patients(last_name, first_name);
-CREATE INDEX IF NOT EXISTS idx_encounters_patient ON encounters(patient_id);
-CREATE INDEX IF NOT EXISTS idx_encounters_dates ON encounters(admit_date, discharge_date);
-CREATE INDEX IF NOT EXISTS idx_diagnoses_encounter ON diagnoses(encounter_id);
-CREATE INDEX IF NOT EXISTS idx_diagnoses_icd10 ON diagnoses(icd10_code);
-CREATE INDEX IF NOT EXISTS idx_lab_results_encounter ON lab_results(encounter_id);
-CREATE INDEX IF NOT EXISTS idx_lab_results_patient ON lab_results(patient_id);
-CREATE INDEX IF NOT EXISTS idx_medication_orders_encounter ON medication_orders(encounter_id);
-CREATE INDEX IF NOT EXISTS idx_vital_signs_encounter ON vital_signs(encounter_id);
-CREATE INDEX IF NOT EXISTS idx_orders_encounter ON orders(encounter_id);
-CREATE INDEX IF NOT EXISTS idx_audit_log_timestamp ON audit_log(timestamp);
-CREATE INDEX IF NOT EXISTS idx_clinical_alerts_patient ON clinical_alerts(patient_id);
-CREATE INDEX IF NOT EXISTS idx_beds_department ON beds(department_id);
-CREATE INDEX IF NOT EXISTS idx_providers_npi ON providers(npi);
-"""
-
-
-# ---------------------------------------------------------------------------
-# Helper utilities
+# Helpers
 # ---------------------------------------------------------------------------
 
 def _random_dt(start, end):
     """Return a random datetime between *start* and *end*."""
     delta = end - start
-    seconds = random.randint(0, max(0, int(delta.total_seconds())))
-    return start + timedelta(seconds=seconds)
+    secs = random.randint(0, max(int(delta.total_seconds()), 1))
+    return start + timedelta(seconds=secs)
 
 
 def _fmt(dt):
-    """Format a datetime as ISO-8601 string."""
     return dt.strftime("%Y-%m-%d %H:%M:%S")
 
 
-def _fmt_date(dt):
-    """Format a datetime as a date-only string."""
+def _date_only(dt):
     return dt.strftime("%Y-%m-%d")
 
 
-def _generate_npi():
-    """Generate a realistic-looking 10-digit NPI."""
-    return "".join([str(random.randint(0, 9)) for _ in range(10)])
+def _mrn():
+    """Generate a medical record number like MRN-0000001."""
+    _mrn._counter = getattr(_mrn, "_counter", 0) + 1
+    return f"MRN-{_mrn._counter:07d}"
 
 
-def _generate_mrn(idx):
-    """Generate an MRN like MRN-000001."""
-    return f"MRN-{idx:06d}"
-
-
-# ---------------------------------------------------------------------------
-# init_db
-# ---------------------------------------------------------------------------
-
-def init_db(db_path="hinfo.db"):
-    """Create the SQLite database with the full EHR schema.
-
-    Drops existing tables first for a clean start, then creates all 20
-    tables with foreign-key constraints and indexes.
-    """
-    conn = sqlite3.connect(db_path)
-    # Drop tables in reverse dependency order for a clean reinitialisation
-    conn.executescript("""
-        DROP TABLE IF EXISTS system_status;
-        DROP TABLE IF EXISTS hl7_messages;
-        DROP TABLE IF EXISTS quality_measures;
-        DROP TABLE IF EXISTS clinical_alerts;
-        DROP TABLE IF EXISTS audit_log;
-        DROP TABLE IF EXISTS staff_schedule;
-        DROP TABLE IF EXISTS beds;
-        DROP TABLE IF EXISTS orders;
-        DROP TABLE IF EXISTS vital_signs;
-        DROP TABLE IF EXISTS lab_results;
-        DROP TABLE IF EXISTS medication_orders;
-        DROP TABLE IF EXISTS medications;
-        DROP TABLE IF EXISTS procedures;
-        DROP TABLE IF EXISTS diagnoses;
-        DROP TABLE IF EXISTS encounters;
-        DROP TABLE IF EXISTS patients;
-        DROP TABLE IF EXISTS providers;
-        DROP TABLE IF EXISTS insurance_plans;
-        DROP TABLE IF EXISTS departments;
-    """)
-    conn.executescript(SCHEMA_SQL)
-    conn.close()
-    print(f"[init_db] Schema created at {db_path}")
+def _npi():
+    """Generate a 10-digit NPI."""
+    _npi._counter = getattr(_npi, "_counter", 1000000000)
+    val = _npi._counter
+    _npi._counter += 1
+    return str(val)
 
 
 # ---------------------------------------------------------------------------
-# seed_data
+# Schema DDL
 # ---------------------------------------------------------------------------
 
-def seed_data(db_path="hinfo.db"):
-    """Populate the database with realistic fake healthcare data.
+SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS departments (
+    dept_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    dept_name     TEXT NOT NULL,
+    dept_code     TEXT UNIQUE NOT NULL,
+    floor         TEXT,
+    building      TEXT,
+    manager_name  TEXT,
+    phone         TEXT,
+    active        INTEGER DEFAULT 1
+);
 
-    Generates:
-      - 500 patients, 50 providers, 15 departments, 10 insurance plans
-      - 1200 encounters, 2500 diagnoses, 800 procedures, 30 medications
-      - 1500 medication orders, 3000 lab results, 4000 vital signs
-      - 300 allergies, 1000 orders, 200 beds, 500 staff schedules
-      - 500 audit log entries, 150 clinical alerts, 20 quality measures
-      - 100 HL7 messages, 8 system-status rows
-    """
-    conn = sqlite3.connect(db_path)
-    conn.execute("PRAGMA foreign_keys=ON")
-    cur = conn.cursor()
+CREATE TABLE IF NOT EXISTS providers (
+    provider_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+    npi            TEXT UNIQUE NOT NULL,
+    first_name     TEXT NOT NULL,
+    last_name      TEXT NOT NULL,
+    credential     TEXT,
+    specialty      TEXT,
+    department_id  INTEGER,
+    email          TEXT,
+    phone          TEXT,
+    active         INTEGER DEFAULT 1,
+    FOREIGN KEY (department_id) REFERENCES departments(dept_id)
+);
 
-    now = datetime.now()
-    ninety_days_ago = now - timedelta(days=90)
+CREATE TABLE IF NOT EXISTS patients (
+    mrn              TEXT PRIMARY KEY,
+    first_name       TEXT NOT NULL,
+    last_name        TEXT NOT NULL,
+    dob              TEXT NOT NULL,
+    gender           TEXT NOT NULL,
+    race             TEXT,
+    ethnicity        TEXT,
+    address          TEXT,
+    city             TEXT,
+    state            TEXT,
+    zip              TEXT,
+    phone            TEXT,
+    email            TEXT,
+    primary_language TEXT DEFAULT 'English',
+    insurance_plan   TEXT,
+    insurance_id     TEXT,
+    pcp_id           INTEGER,
+    created_at       TEXT DEFAULT (datetime('now')),
+    status           TEXT DEFAULT 'active',
+    FOREIGN KEY (pcp_id) REFERENCES providers(provider_id)
+);
 
-    # ==================================================================
-    # Insurance Plans (10)
-    # ==================================================================
-    print("[seed] Inserting insurance plans ...")
-    for plan_name, plan_type, payer_name, group_number in INSURANCE_PLANS:
+CREATE TABLE IF NOT EXISTS encounters (
+    encounter_id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_mrn           TEXT NOT NULL,
+    encounter_type        TEXT NOT NULL,
+    admission_date        TEXT NOT NULL,
+    discharge_date        TEXT,
+    attending_provider_id INTEGER,
+    department_id         INTEGER,
+    chief_complaint       TEXT,
+    disposition           TEXT,
+    status                TEXT DEFAULT 'open',
+    drg_code              TEXT,
+    los_days              REAL,
+    FOREIGN KEY (patient_mrn) REFERENCES patients(mrn),
+    FOREIGN KEY (attending_provider_id) REFERENCES providers(provider_id),
+    FOREIGN KEY (department_id) REFERENCES departments(dept_id)
+);
+
+CREATE TABLE IF NOT EXISTS diagnoses (
+    diagnosis_id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    encounter_id             INTEGER NOT NULL,
+    patient_mrn              TEXT NOT NULL,
+    icd10_code               TEXT NOT NULL,
+    description              TEXT,
+    diagnosis_type           TEXT DEFAULT 'secondary',
+    diagnosed_by_provider_id INTEGER,
+    diagnosed_date           TEXT,
+    status                   TEXT DEFAULT 'active',
+    FOREIGN KEY (encounter_id) REFERENCES encounters(encounter_id),
+    FOREIGN KEY (patient_mrn) REFERENCES patients(mrn),
+    FOREIGN KEY (diagnosed_by_provider_id) REFERENCES providers(provider_id)
+);
+
+CREATE TABLE IF NOT EXISTS procedures (
+    procedure_id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    encounter_id            INTEGER NOT NULL,
+    patient_mrn             TEXT NOT NULL,
+    cpt_code                TEXT NOT NULL,
+    description             TEXT,
+    performing_provider_id  INTEGER,
+    procedure_date          TEXT,
+    department_id           INTEGER,
+    status                  TEXT DEFAULT 'completed',
+    FOREIGN KEY (encounter_id) REFERENCES encounters(encounter_id),
+    FOREIGN KEY (patient_mrn) REFERENCES patients(mrn),
+    FOREIGN KEY (performing_provider_id) REFERENCES providers(provider_id),
+    FOREIGN KEY (department_id) REFERENCES departments(dept_id)
+);
+
+CREATE TABLE IF NOT EXISTS medications (
+    med_id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+    encounter_id             INTEGER NOT NULL,
+    patient_mrn              TEXT NOT NULL,
+    medication_name          TEXT NOT NULL,
+    dosage                   TEXT,
+    route                    TEXT,
+    frequency                TEXT,
+    prescribing_provider_id  INTEGER,
+    start_date               TEXT,
+    end_date                 TEXT,
+    status                   TEXT DEFAULT 'active',
+    ndc_code                 TEXT,
+    FOREIGN KEY (encounter_id) REFERENCES encounters(encounter_id),
+    FOREIGN KEY (patient_mrn) REFERENCES patients(mrn),
+    FOREIGN KEY (prescribing_provider_id) REFERENCES providers(provider_id)
+);
+
+CREATE TABLE IF NOT EXISTS lab_results (
+    lab_id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    encounter_id          INTEGER NOT NULL,
+    patient_mrn           TEXT NOT NULL,
+    test_name             TEXT NOT NULL,
+    test_code             TEXT,
+    result_value          TEXT,
+    result_unit           TEXT,
+    reference_range_low   REAL,
+    reference_range_high  REAL,
+    abnormal_flag         TEXT DEFAULT 'N',
+    collected_datetime    TEXT,
+    resulted_datetime     TEXT,
+    ordering_provider_id  INTEGER,
+    status                TEXT DEFAULT 'final',
+    FOREIGN KEY (encounter_id) REFERENCES encounters(encounter_id),
+    FOREIGN KEY (patient_mrn) REFERENCES patients(mrn),
+    FOREIGN KEY (ordering_provider_id) REFERENCES providers(provider_id)
+);
+
+CREATE TABLE IF NOT EXISTS vital_signs (
+    vital_id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    encounter_id            INTEGER NOT NULL,
+    patient_mrn             TEXT NOT NULL,
+    recorded_datetime       TEXT NOT NULL,
+    temperature             REAL,
+    heart_rate              INTEGER,
+    systolic_bp             INTEGER,
+    diastolic_bp            INTEGER,
+    respiratory_rate        INTEGER,
+    spo2                    REAL,
+    height_cm               REAL,
+    weight_kg               REAL,
+    bmi                     REAL,
+    recorded_by_provider_id INTEGER,
+    FOREIGN KEY (encounter_id) REFERENCES encounters(encounter_id),
+    FOREIGN KEY (patient_mrn) REFERENCES patients(mrn),
+    FOREIGN KEY (recorded_by_provider_id) REFERENCES providers(provider_id)
+);
+
+CREATE TABLE IF NOT EXISTS orders (
+    order_id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    encounter_id          INTEGER NOT NULL,
+    patient_mrn           TEXT NOT NULL,
+    order_type            TEXT NOT NULL,
+    order_description     TEXT,
+    ordering_provider_id  INTEGER,
+    order_datetime        TEXT,
+    status                TEXT DEFAULT 'ordered',
+    priority              TEXT DEFAULT 'routine',
+    FOREIGN KEY (encounter_id) REFERENCES encounters(encounter_id),
+    FOREIGN KEY (patient_mrn) REFERENCES patients(mrn),
+    FOREIGN KEY (ordering_provider_id) REFERENCES providers(provider_id)
+);
+
+CREATE TABLE IF NOT EXISTS allergies (
+    allergy_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_mrn   TEXT NOT NULL,
+    allergen      TEXT NOT NULL,
+    allergy_type  TEXT,
+    reaction      TEXT,
+    severity      TEXT,
+    reported_date TEXT,
+    status        TEXT DEFAULT 'active',
+    FOREIGN KEY (patient_mrn) REFERENCES patients(mrn)
+);
+
+CREATE TABLE IF NOT EXISTS insurance_claims (
+    claim_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    encounter_id   INTEGER NOT NULL,
+    patient_mrn    TEXT NOT NULL,
+    insurance_plan TEXT,
+    claim_amount   REAL,
+    paid_amount    REAL,
+    denied_amount  REAL DEFAULT 0,
+    claim_status   TEXT DEFAULT 'submitted',
+    submitted_date TEXT,
+    resolved_date  TEXT,
+    denial_reason  TEXT,
+    FOREIGN KEY (encounter_id) REFERENCES encounters(encounter_id),
+    FOREIGN KEY (patient_mrn) REFERENCES patients(mrn)
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    user_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    username      TEXT UNIQUE NOT NULL,
+    full_name     TEXT NOT NULL,
+    role          TEXT NOT NULL,
+    department_id INTEGER,
+    last_login    TEXT,
+    active        INTEGER DEFAULT 1,
+    access_level  INTEGER DEFAULT 1,
+    FOREIGN KEY (department_id) REFERENCES departments(dept_id)
+);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+    log_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id       INTEGER,
+    action        TEXT NOT NULL,
+    resource_type TEXT,
+    resource_id   TEXT,
+    timestamp     TEXT NOT NULL,
+    ip_address    TEXT,
+    details       TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE IF NOT EXISTS hl7_messages (
+    message_id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    message_type        TEXT NOT NULL,
+    trigger_event       TEXT,
+    sending_system      TEXT,
+    receiving_system    TEXT,
+    patient_mrn         TEXT,
+    encounter_id        INTEGER,
+    message_datetime    TEXT,
+    status              TEXT DEFAULT 'received',
+    raw_message_preview TEXT,
+    FOREIGN KEY (patient_mrn) REFERENCES patients(mrn),
+    FOREIGN KEY (encounter_id) REFERENCES encounters(encounter_id)
+);
+
+CREATE TABLE IF NOT EXISTS system_alerts (
+    alert_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    alert_type      TEXT NOT NULL,
+    severity        TEXT DEFAULT 'info',
+    source_system   TEXT,
+    message         TEXT,
+    created_at      TEXT,
+    acknowledged    INTEGER DEFAULT 0,
+    acknowledged_by TEXT
+);
+"""
+
+
+# ---------------------------------------------------------------------------
+# Seeding functions
+# ---------------------------------------------------------------------------
+
+def _seed_departments(cur):
+    for d in DEPARTMENTS_DATA:
         cur.execute(
-            "INSERT INTO insurance_plans (plan_name, plan_type, payer_name, group_number) "
-            "VALUES (?,?,?,?)",
-            (plan_name, plan_type, payer_name, group_number),
+            "INSERT INTO departments (dept_name, dept_code, floor, building, manager_name, phone, active) "
+            "VALUES (?,?,?,?,?,?,1)",
+            d,
         )
-    conn.commit()
-    insurance_ids = list(range(1, len(INSURANCE_PLANS) + 1))
 
-    # ==================================================================
-    # Departments (15)
-    # ==================================================================
-    print("[seed] Inserting departments ...")
-    for name, code, floor, building, phone, bed_count in DEPARTMENTS:
-        manager = fake.name()
-        cur.execute(
-            "INSERT INTO departments (name, code, floor, building, phone, manager_name, bed_count) "
-            "VALUES (?,?,?,?,?,?,?)",
-            (name, code, floor, building, phone, manager, bed_count),
-        )
-    conn.commit()
-    dept_ids = list(range(1, len(DEPARTMENTS) + 1))
 
-    # Build a map of departments that have beds
-    dept_bed_map = {}
-    for idx, (_, _, _, _, _, bed_count) in enumerate(DEPARTMENTS, 1):
-        if bed_count:
-            dept_bed_map[idx] = bed_count
-
-    # ==================================================================
-    # Providers (50)
-    # ==================================================================
-    print("[seed] Inserting providers ...")
-    provider_ids = []
-    used_npis = set()
-    for _ in range(50):
-        npi = _generate_npi()
-        while npi in used_npis:
-            npi = _generate_npi()
-        used_npis.add(npi)
-        first = fake.first_name()
-        last = fake.last_name()
-        cred = random.choice(CREDENTIALS)
-        spec = random.choice(SPECIALTIES)
-        dept = random.choice(dept_ids)
-        email = f"{first.lower()}.{last.lower()}@hospital.org"
-        phone = fake.phone_number()
+def _seed_providers(cur, now):
+    """Generate 80 providers spread across departments."""
+    providers = []
+    provider_count = 80
+    dept_count = len(DEPARTMENTS_DATA)
+    for i in range(provider_count):
+        dept_id = (i % dept_count) + 1
+        specs = SPECIALTIES_BY_DEPT.get(dept_id, ["General"])
+        specialty = random.choice(specs)
+        cred = random.choices(CREDENTIALS, weights=[35, 15, 20, 12, 10, 8])[0]
+        fn = fake.first_name() if HAS_FAKER else f"Provider{i}First"
+        ln = fake.last_name() if HAS_FAKER else f"Provider{i}Last"
+        npi = _npi()
+        email = f"{fn.lower()}.{ln.lower()}@merithealth.org"
+        phone = fake.phone_number() if HAS_FAKER else f"(555) 200-{i:04d}"
         active = 1 if random.random() < 0.95 else 0
-        cur.execute(
-            "INSERT INTO providers (npi, first_name, last_name, credentials, specialty, "
-            "department_id, email, phone, active) VALUES (?,?,?,?,?,?,?,?,?)",
-            (npi, first, last, cred, spec, dept, email, phone, active),
-        )
-        provider_ids.append(cur.lastrowid)
-    conn.commit()
+        providers.append((npi, fn, ln, cred, specialty, dept_id, email, phone, active))
+    cur.executemany(
+        "INSERT INTO providers (npi, first_name, last_name, credential, specialty, department_id, email, phone, active) "
+        "VALUES (?,?,?,?,?,?,?,?,?)",
+        providers,
+    )
+    return provider_count
 
-    # ==================================================================
-    # Patients (500)
-    # ==================================================================
-    print("[seed] Inserting patients ...")
-    genders = ["Male", "Female", "Other", "Unknown"]
-    gender_weights = [0.48, 0.48, 0.02, 0.02]
-    races = [
-        "White", "Black or African American", "Asian",
-        "American Indian or Alaska Native",
-        "Native Hawaiian or Other Pacific Islander",
-        "Two or More Races", "Unknown",
-    ]
+
+def _seed_patients(cur, num_providers, now):
+    """Generate 500 patients."""
+    patients = []
+    genders = ["Male", "Female", "Non-binary"]
+    races = ["White", "Black or African American", "Asian",
+             "American Indian or Alaska Native", "Native Hawaiian or Other Pacific Islander",
+             "Two or More Races", "Unknown"]
     ethnicities = ["Hispanic or Latino", "Not Hispanic or Latino", "Unknown"]
-    statuses = ["active", "inactive", "deceased"]
-    status_weights = [0.85, 0.10, 0.05]
+    languages = ["English", "Spanish", "Chinese", "Vietnamese", "Korean",
+                 "Tagalog", "Arabic", "French", "Russian", "Portuguese"]
+    statuses = ["active", "active", "active", "active", "inactive", "deceased"]
+    states_list = [
+        "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA",
+        "HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
+        "MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+        "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC",
+        "SD","TN","TX","UT","VT","VA","WA","WV","WI","WY",
+    ]
 
-    patient_ids = []
-    for i in range(1, 501):
-        mrn = _generate_mrn(i)
-        first = fake.first_name()
-        last = fake.last_name()
-        dob = fake.date_of_birth(minimum_age=1, maximum_age=95)
-        gender = random.choices(genders, gender_weights)[0]
+    mrn_list = []
+    for i in range(500):
+        mrn = _mrn()
+        mrn_list.append(mrn)
+        gender = random.choices(genders, weights=[48, 48, 4])[0]
+        fn = fake.first_name_male() if gender == "Male" else fake.first_name_female() if gender == "Female" else fake.first_name()
+        ln = fake.last_name()
+        dob = _date_only(_random_dt(datetime(1935, 1, 1), datetime(2024, 1, 1)))
         race = random.choice(races)
         ethnicity = random.choice(ethnicities)
-        ssn4 = f"{random.randint(0, 9999):04d}"
-        address = fake.street_address()
-        city = fake.city()
-        state = fake.state_abbr()
-        zipcode = fake.zipcode()
-        phone = fake.phone_number()
-        email = f"{first.lower()}.{last.lower()}{random.randint(1, 999)}@{fake.free_email_domain()}"
-        ins_id = random.choice(insurance_ids)
-        pcp_id = random.choice(provider_ids)
-        created = _fmt(_random_dt(now - timedelta(days=365 * 3), now))
-        status = random.choices(statuses, status_weights)[0]
-        cur.execute(
-            "INSERT INTO patients "
-            "(mrn, first_name, last_name, dob, gender, race, ethnicity, "
-            " ssn_last4, address, city, state, zip, phone, email, "
-            " insurance_id, primary_care_provider_id, created_at, status) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            (mrn, first, last, str(dob), gender, race, ethnicity,
-             ssn4, address, city, state, zipcode, phone, email,
-             ins_id, pcp_id, created, status),
-        )
-        patient_ids.append(cur.lastrowid)
-    conn.commit()
+        addr = fake.street_address() if HAS_FAKER else f"{random.randint(100,9999)} Main St"
+        city = fake.city() if HAS_FAKER else "Springfield"
+        state = random.choice(states_list)
+        zipcode = fake.zipcode() if HAS_FAKER else f"{random.randint(10000,99999)}"
+        phone = fake.phone_number() if HAS_FAKER else f"(555) 300-{i:04d}"
+        email = f"{fn.lower()}.{ln.lower()}{random.randint(1,999)}@email.com"
+        lang = random.choices(languages, weights=[60, 15, 5, 3, 3, 3, 3, 3, 3, 2])[0]
+        ins_plan = random.choice(INSURANCE_PLANS)
+        ins_id = f"{ins_plan[:3].upper()}{random.randint(100000000, 999999999)}"
+        pcp_id = random.randint(1, num_providers)
+        created = _fmt(_random_dt(now - timedelta(days=3*365), now))
+        status = random.choice(statuses)
+        patients.append((
+            mrn, fn, ln, dob, gender, race, ethnicity,
+            addr, city, state, zipcode, phone, email,
+            lang, ins_plan, ins_id, pcp_id, created, status,
+        ))
+    cur.executemany(
+        "INSERT INTO patients (mrn, first_name, last_name, dob, gender, race, ethnicity, "
+        "address, city, state, zip, phone, email, primary_language, insurance_plan, insurance_id, "
+        "pcp_id, created_at, status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        patients,
+    )
+    return mrn_list
 
-    # ==================================================================
-    # Encounters (1200)
-    # ==================================================================
-    print("[seed] Inserting encounters ...")
-    encounter_types = ["inpatient", "outpatient", "emergency", "observation"]
-    enc_weights = [0.30, 0.35, 0.25, 0.10]
-    admission_sources = [
-        "Emergency Room", "Physician Referral", "Transfer",
-        "Walk-in", "Direct Admit", "Clinic",
+
+def _seed_encounters(cur, mrn_list, num_providers, now):
+    """Generate 1200 encounters over the last 365 days."""
+    enc_meta = []  # list of (encounter_id, patient_mrn, admission_date, discharge_date)
+    year_ago = now - timedelta(days=365)
+
+    drg_codes = [
+        "291", "292", "293",  # Heart failure
+        "177", "178", "179",  # Respiratory infections
+        "689", "690",         # Kidney & UTI
+        "470",                # Major joint replacement
+        "871", "872",         # Septicemia
+        "065", "066",         # Intracranial hemorrhage / stroke
+        "193", "194", "195",  # Pneumothorax
+        "300", "301",         # Peripheral vascular disorders
+        "640", "641",         # Nutritional disorders
+        "378", "379",         # GI hemorrhage
+        "682", "683",         # Renal failure
+        "190", "191",         # COPD
+        "305", "306",         # Hypertension
+        "462", "463",         # Rehabilitation
     ]
-    discharge_dispositions = [
-        "Home", "Home with Home Health", "Skilled Nursing Facility",
-        "Rehabilitation Facility", "Transfer to Another Hospital",
-        "Against Medical Advice", "Expired", "Hospice",
-    ]
-    encounter_ids = []
-    # Parallel list for fast lookups during child-row generation
-    encounter_data = []  # (id, patient_id, provider_id, dept_id, admit_dt, discharge_dt, status, enc_type)
 
-    for _ in range(1200):
-        pat_id = random.choice(patient_ids)
-        prov_id = random.choice(provider_ids)
-        dept_id = random.choice(dept_ids)
-        enc_type = random.choices(encounter_types, enc_weights)[0]
-        admit_dt = _random_dt(ninety_days_ago, now - timedelta(hours=2))
-
-        if enc_type == "outpatient":
-            discharge_dt = admit_dt + timedelta(hours=random.randint(1, 4))
-            status = "discharged"
-        elif enc_type == "emergency":
-            hours = random.randint(2, 24)
-            discharge_dt = admit_dt + timedelta(hours=hours)
-            status = random.choices(["discharged", "active"], [0.85, 0.15])[0]
-            if status == "active":
-                discharge_dt = None
-        elif enc_type == "observation":
-            hours = random.randint(6, 48)
-            discharge_dt = admit_dt + timedelta(hours=hours)
-            status = random.choices(["discharged", "active"], [0.80, 0.20])[0]
-            if status == "active":
-                discharge_dt = None
+    rows = []
+    for i in range(1200):
+        mrn = random.choice(mrn_list)
+        etype = random.choices(
+            ENCOUNTER_TYPES,
+            weights=[30, 25, 25, 10, 10],
+        )[0]
+        admit_dt = _random_dt(year_ago, now - timedelta(hours=1))
+        if etype == "ED":
+            los_hours = random.choices([2, 4, 6, 8, 12, 24], weights=[15, 25, 25, 15, 10, 10])[0]
+        elif etype == "outpatient" or etype == "telehealth":
+            los_hours = random.choices([0.5, 1, 2, 4], weights=[30, 40, 20, 10])[0]
+        elif etype == "observation":
+            los_hours = random.choices([12, 24, 36, 48], weights=[20, 40, 25, 15])[0]
         else:  # inpatient
-            days = random.randint(1, 14)
-            discharge_dt = admit_dt + timedelta(days=days, hours=random.randint(0, 12))
-            status = random.choices(
-                ["discharged", "active", "transferred"], [0.75, 0.15, 0.10]
-            )[0]
-            if status == "active":
-                discharge_dt = None
+            los_hours = random.choices([24, 48, 72, 96, 120, 168, 240, 336], weights=[10, 15, 20, 15, 15, 10, 10, 5])[0]
 
-        cc = random.choice(CHIEF_COMPLAINTS)
-        adm_src = random.choice(admission_sources)
-        disp = random.choice(discharge_dispositions) if discharge_dt else None
+        discharge_dt = admit_dt + timedelta(hours=los_hours)
+        is_open = discharge_dt > now
+        discharge_str = None if is_open else _fmt(discharge_dt)
+        status = random.choices(["open", "closed", "cancelled"], weights=[15, 80, 5])[0]
+        if is_open:
+            status = "open"
 
-        cur.execute(
-            "INSERT INTO encounters "
-            "(patient_id, provider_id, department_id, encounter_type, "
-            " admit_date, discharge_date, status, chief_complaint, "
-            " admission_source, discharge_disposition) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?)",
-            (pat_id, prov_id, dept_id, enc_type,
-             _fmt(admit_dt),
-             _fmt(discharge_dt) if discharge_dt else None,
-             status, cc, adm_src, disp),
-        )
-        eid = cur.lastrowid
-        encounter_ids.append(eid)
-        encounter_data.append(
-            (eid, pat_id, prov_id, dept_id, admit_dt, discharge_dt, status, enc_type)
-        )
-    conn.commit()
+        prov_id = random.randint(1, num_providers)
+        dept_id = random.randint(1, 15)
+        complaint = random.choice(CHIEF_COMPLAINTS)
+        disposition = None if is_open else random.choice(DISPOSITIONS)
+        drg = random.choice(drg_codes) if etype == "inpatient" else None
+        los_days = round(los_hours / 24.0, 1)
 
-    # Helper: get a safe end datetime for an encounter (discharge or now)
-    def _enc_end(enc):
-        return enc[5] if enc[5] else now
+        rows.append((
+            mrn, etype, _fmt(admit_dt), discharge_str,
+            prov_id, dept_id, complaint, disposition,
+            status, drg, los_days,
+        ))
+        enc_meta.append((i + 1, mrn, admit_dt, discharge_dt))
 
-    # ==================================================================
-    # Diagnoses (2500)
-    # ==================================================================
-    print("[seed] Inserting diagnoses ...")
-    dx_types = ["primary", "secondary", "admitting"]
-    dx_type_weights = [0.30, 0.55, 0.15]
-    for _ in range(2500):
-        enc = random.choice(encounter_data)
-        eid, pat_id = enc[0], enc[1]
+    cur.executemany(
+        "INSERT INTO encounters (patient_mrn, encounter_type, admission_date, discharge_date, "
+        "attending_provider_id, department_id, chief_complaint, disposition, status, drg_code, los_days) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        rows,
+    )
+    return enc_meta
+
+
+def _seed_diagnoses(cur, enc_meta, num_providers):
+    """Generate 2500 diagnoses."""
+    rows = []
+    for i in range(2500):
+        enc_id, mrn, admit_dt, _ = random.choice(enc_meta)
         code, desc = random.choice(ICD10_CODES)
-        dx_type = random.choices(dx_types, dx_type_weights)[0]
-        diag_prov = random.choice(provider_ids)
-        dx_date = _random_dt(enc[4], _enc_end(enc))
-        cur.execute(
-            "INSERT INTO diagnoses "
-            "(encounter_id, patient_id, icd10_code, description, "
-            " diagnosis_type, diagnosed_by_provider_id, diagnosis_date) "
-            "VALUES (?,?,?,?,?,?,?)",
-            (eid, pat_id, code, desc, dx_type, diag_prov, _fmt(dx_date)),
-        )
-    conn.commit()
+        dx_type = random.choices(
+            ["primary", "secondary", "admitting"],
+            weights=[25, 60, 15],
+        )[0]
+        prov_id = random.randint(1, num_providers)
+        dx_date = _fmt(admit_dt + timedelta(hours=random.randint(0, 12)))
+        status = random.choices(["active", "resolved", "chronic"], weights=[50, 30, 20])[0]
+        rows.append((enc_id, mrn, code, desc, dx_type, prov_id, dx_date, status))
+    cur.executemany(
+        "INSERT INTO diagnoses (encounter_id, patient_mrn, icd10_code, description, "
+        "diagnosis_type, diagnosed_by_provider_id, diagnosed_date, status) "
+        "VALUES (?,?,?,?,?,?,?,?)",
+        rows,
+    )
 
-    # ==================================================================
-    # Procedures (800)
-    # ==================================================================
-    print("[seed] Inserting procedures ...")
-    proc_statuses = ["completed", "scheduled", "in_progress", "cancelled"]
-    proc_status_weights = [0.75, 0.10, 0.10, 0.05]
-    for _ in range(800):
-        enc = random.choice(encounter_data)
-        eid, pat_id = enc[0], enc[1]
-        code, desc = random.choice(CPT_CODES)
-        perf_prov = random.choice(provider_ids)
-        proc_date = _random_dt(enc[4], _enc_end(enc))
-        pstatus = random.choices(proc_statuses, proc_status_weights)[0]
-        cur.execute(
-            "INSERT INTO procedures "
-            "(encounter_id, patient_id, cpt_code, description, "
-            " performing_provider_id, procedure_date, status) "
-            "VALUES (?,?,?,?,?,?,?)",
-            (eid, pat_id, code, desc, perf_prov, _fmt(proc_date), pstatus),
-        )
-    conn.commit()
 
-    # ==================================================================
-    # Medications (30)
-    # ==================================================================
-    print("[seed] Inserting medications ...")
-    med_ids = []
-    for name, generic, drug_class, route, form in MEDICATIONS:
-        cur.execute(
-            "INSERT INTO medications (name, generic_name, drug_class, route, form) "
-            "VALUES (?,?,?,?,?)",
-            (name, generic, drug_class, route, form),
-        )
-        med_ids.append(cur.lastrowid)
-    conn.commit()
+def _seed_procedures(cur, enc_meta, num_providers):
+    """Generate 1800 procedures."""
+    rows = []
+    for i in range(1800):
+        enc_id, mrn, admit_dt, _ = random.choice(enc_meta)
+        cpt, desc = random.choice(CPT_CODES)
+        prov_id = random.randint(1, num_providers)
+        proc_date = _fmt(admit_dt + timedelta(hours=random.randint(0, 48)))
+        dept_id = random.randint(1, 15)
+        status = random.choices(
+            ["completed", "scheduled", "in_progress", "cancelled"],
+            weights=[70, 10, 10, 10],
+        )[0]
+        rows.append((enc_id, mrn, cpt, desc, prov_id, proc_date, dept_id, status))
+    cur.executemany(
+        "INSERT INTO procedures (encounter_id, patient_mrn, cpt_code, description, "
+        "performing_provider_id, procedure_date, department_id, status) "
+        "VALUES (?,?,?,?,?,?,?,?)",
+        rows,
+    )
 
-    # ==================================================================
-    # Medication Orders (1500)
-    # ==================================================================
-    print("[seed] Inserting medication orders ...")
-    frequencies = [
-        "once", "BID", "TID", "QID", "Q4H", "Q6H",
-        "Q8H", "Q12H", "daily", "PRN", "continuous",
-    ]
-    dose_units = ["mg", "mcg", "mL", "units", "mEq", "g"]
-    med_order_statuses = ["active", "completed", "discontinued", "held"]
-    med_order_weights = [0.35, 0.45, 0.15, 0.05]
 
-    for _ in range(1500):
-        enc = random.choice(encounter_data)
-        eid, pat_id = enc[0], enc[1]
-        med_idx = random.randint(0, len(MEDICATIONS) - 1)
-        med_id = med_ids[med_idx]
-        med_info = MEDICATIONS[med_idx]
-        ord_prov = random.choice(provider_ids)
+def _seed_medications(cur, enc_meta, num_providers):
+    """Generate 3000 medication orders."""
+    rows = []
+    for i in range(3000):
+        enc_id, mrn, admit_dt, discharge_dt = random.choice(enc_meta)
+        med = random.choice(MEDICATION_LIST)
+        med_name, dosage, route, freq, ndc = med
+        prov_id = random.randint(1, num_providers)
+        start = admit_dt + timedelta(hours=random.randint(0, 6))
+        duration_days = random.randint(1, 30)
+        end = start + timedelta(days=duration_days)
+        status = random.choices(
+            ["active", "discontinued", "completed"],
+            weights=[30, 15, 55],
+        )[0]
+        rows.append((
+            enc_id, mrn, med_name, dosage, route, freq,
+            prov_id, _fmt(start), _fmt(end), status, ndc,
+        ))
+    cur.executemany(
+        "INSERT INTO medications (encounter_id, patient_mrn, medication_name, dosage, route, "
+        "frequency, prescribing_provider_id, start_date, end_date, status, ndc_code) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        rows,
+    )
 
-        # Realistic dose based on route
-        if med_info[3] == "intravenous":
-            dose = str(random.choice([250, 500, 1000, 100, 50, 25, 1, 2, 4]))
-        elif med_info[3] == "oral":
-            dose = str(random.choice([5, 10, 20, 25, 40, 50, 81, 100, 200, 325, 500, 650, 1000]))
-        elif med_info[3] == "subcutaneous":
-            dose = str(random.choice([10, 20, 30, 40, 50, 60, 80, 100]))
-        else:
-            dose = str(random.choice([2.5, 5, 10]))
 
-        unit = random.choice(dose_units[:3])  # mg, mcg, mL are most common
-        if "Insulin" in med_info[0]:
-            unit = "units"
-        elif "Potassium" in med_info[0]:
-            unit = "mEq"
-
-        freq = random.choice(frequencies)
-        route = med_info[3]
-
-        start = _random_dt(enc[4], _enc_end(enc))
-        mo_status = random.choices(med_order_statuses, med_order_weights)[0]
-        if mo_status in ("completed", "discontinued"):
-            end = start + timedelta(days=random.randint(1, 14))
-        else:
-            end = None
-
-        cur.execute(
-            "INSERT INTO medication_orders "
-            "(encounter_id, patient_id, medication_id, ordering_provider_id, "
-            " dose, unit, frequency, route, start_date, end_date, status) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-            (eid, pat_id, med_id, ord_prov,
-             dose, unit, freq, route,
-             _fmt(start), _fmt(end) if end else None, mo_status),
-        )
-    conn.commit()
-
-    # ==================================================================
-    # Lab Results (3000)
-    # ==================================================================
-    print("[seed] Inserting lab results ...")
-    lab_statuses = ["final", "preliminary", "corrected"]
-    lab_status_weights = [0.85, 0.10, 0.05]
-
-    for _ in range(3000):
-        enc = random.choice(encounter_data)
-        eid, pat_id = enc[0], enc[1]
+def _seed_lab_results(cur, enc_meta, num_providers):
+    """Generate 4000 lab results with realistic values."""
+    rows = []
+    for i in range(4000):
+        enc_id, mrn, admit_dt, _ = random.choice(enc_meta)
         test = random.choice(LAB_TESTS)
-        test_name, test_code, unit, ref_low, ref_high, value_fn = test
-        value = value_fn()
-        # Ensure non-negative for most labs
-        if value < 0:
-            value = abs(value)
+        test_name, test_code, unit, ref_low, ref_high, mean, std = test
+
+        # Generate a realistic value
+        val = round(random.gauss(mean, std), 2)
+        if ref_low is not None and val < ref_low * 0.3:
+            val = round(ref_low * 0.3, 2)
+        if ref_high is not None and val > ref_high * 2.5:
+            val = round(ref_high * 2.5, 2)
+
         # Determine abnormal flag
-        if ref_low is not None and ref_high is not None:
-            if value < ref_low:
-                flag = "L"
-            elif value > ref_high:
-                flag = "H"
-            else:
-                flag = "N"
-        else:
-            flag = "N"
-        # Occasionally mark critical
-        if flag in ("L", "H") and random.random() < 0.08:
-            flag = "C"
+        flag = "N"
+        if val < ref_low:
+            flag = "L"
+            if val < ref_low * 0.7:
+                flag = "C"  # critical low
+        elif val > ref_high:
+            flag = "H"
+            if val > ref_high * 1.5:
+                flag = "C"  # critical high
 
-        ord_prov = random.choice(provider_ids)
-        result_date = _random_dt(enc[4], _enc_end(enc))
-        lstatus = random.choices(lab_statuses, lab_status_weights)[0]
-        cur.execute(
-            "INSERT INTO lab_results "
-            "(encounter_id, patient_id, ordering_provider_id, "
-            " test_name, test_code, value, unit, "
-            " reference_range_low, reference_range_high, "
-            " abnormal_flag, result_date, status) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-            (eid, pat_id, ord_prov,
-             test_name, test_code, str(value), unit,
-             ref_low, ref_high, flag,
-             _fmt(result_date), lstatus),
-        )
-    conn.commit()
-
-    # ==================================================================
-    # Vital Signs (4000)
-    # ==================================================================
-    print("[seed] Inserting vital signs ...")
-    for _ in range(4000):
-        enc = random.choice(encounter_data)
-        eid, pat_id = enc[0], enc[1]
-        rec_prov = random.choice(provider_ids)
-        recorded_at = _random_dt(enc[4], _enc_end(enc))
-
-        temp = round(random.gauss(98.6, 0.8), 1)
-        hr = max(40, min(180, int(random.gauss(80, 15))))
-        sbp = max(70, min(220, int(random.gauss(125, 20))))
-        dbp = max(40, min(130, int(random.gauss(75, 12))))
-        rr = max(8, min(40, int(random.gauss(16, 4))))
-        spo2 = round(min(100.0, max(80.0, random.gauss(97.0, 2.0))), 1)
-        pain = random.choices(
-            range(11),
-            weights=[30, 10, 8, 8, 7, 7, 6, 6, 6, 6, 6],
+        collected = admit_dt + timedelta(hours=random.randint(0, 72))
+        resulted = collected + timedelta(minutes=random.randint(30, 360))
+        prov_id = random.randint(1, num_providers)
+        status = random.choices(
+            ["final", "preliminary", "corrected"],
+            weights=[85, 10, 5],
         )[0]
 
-        cur.execute(
-            "INSERT INTO vital_signs "
-            "(encounter_id, patient_id, recorded_by_provider_id, "
-            " temperature, heart_rate, blood_pressure_systolic, "
-            " blood_pressure_diastolic, respiratory_rate, spo2, "
-            " pain_scale, recorded_at) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-            (eid, pat_id, rec_prov,
-             temp, hr, sbp, dbp, rr, spo2, pain,
-             _fmt(recorded_at)),
+        rows.append((
+            enc_id, mrn, test_name, test_code, str(val), unit,
+            ref_low, ref_high, flag,
+            _fmt(collected), _fmt(resulted), prov_id, status,
+        ))
+    cur.executemany(
+        "INSERT INTO lab_results (encounter_id, patient_mrn, test_name, test_code, "
+        "result_value, result_unit, reference_range_low, reference_range_high, abnormal_flag, "
+        "collected_datetime, resulted_datetime, ordering_provider_id, status) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        rows,
+    )
+
+
+def _seed_vital_signs(cur, enc_meta, num_providers):
+    """Generate 2000 vital sign records."""
+    rows = []
+    for i in range(2000):
+        enc_id, mrn, admit_dt, _ = random.choice(enc_meta)
+        recorded = admit_dt + timedelta(hours=random.randint(0, 72))
+        temp = round(random.gauss(98.6, 0.8), 1)
+        hr = random.randint(50, 130)
+        sbp = random.randint(85, 200)
+        dbp = random.randint(50, 110)
+        rr = random.randint(10, 30)
+        spo2 = round(min(100.0, random.gauss(96.5, 2.5)), 1)
+        height = round(random.gauss(170, 10), 1)
+        weight = round(random.gauss(80, 18), 1)
+        bmi = round(weight / ((height / 100) ** 2), 1) if height > 0 else None
+        prov_id = random.randint(1, num_providers)
+        rows.append((
+            enc_id, mrn, _fmt(recorded),
+            temp, hr, sbp, dbp, rr, spo2,
+            height, weight, bmi, prov_id,
+        ))
+    cur.executemany(
+        "INSERT INTO vital_signs (encounter_id, patient_mrn, recorded_datetime, "
+        "temperature, heart_rate, systolic_bp, diastolic_bp, respiratory_rate, spo2, "
+        "height_cm, weight_kg, bmi, recorded_by_provider_id) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        rows,
+    )
+
+
+def _seed_orders(cur, enc_meta, num_providers):
+    """Generate 2500 orders."""
+    order_types = ["lab", "imaging", "medication", "consult", "diet", "nursing"]
+    order_type_weights = [30, 20, 25, 10, 8, 7]
+    priorities = ["routine", "stat", "urgent"]
+    priority_weights = [60, 20, 20]
+    statuses = ["ordered", "in_progress", "completed", "cancelled"]
+    status_weights = [15, 15, 60, 10]
+
+    order_descriptions = {
+        "lab": ["CBC with Differential", "BMP", "CMP", "Lipid Panel", "HbA1c",
+                "Troponin I", "TSH", "Urinalysis", "Blood Culture x2", "PT/INR",
+                "Type and Screen", "Lactic Acid", "BNP", "D-Dimer", "Procalcitonin"],
+        "imaging": ["Chest X-ray 2 views", "CT Head without contrast", "CT Chest with contrast",
+                     "CT Abdomen/Pelvis with contrast", "MRI Brain with/without contrast",
+                     "Ultrasound Abdomen", "X-ray Knee 3 views", "CT Angiography Chest",
+                     "MRI Lumbar Spine", "Echocardiogram"],
+        "medication": ["Start IV Normal Saline 125 mL/hr", "Morphine 2mg IV Q4H PRN pain",
+                        "Ceftriaxone 1g IV Daily", "Heparin drip per protocol",
+                        "Insulin sliding scale", "Potassium Chloride 20mEq PO BID",
+                        "Ondansetron 4mg IV Q6H PRN nausea", "Pantoprazole 40mg IV Daily"],
+        "consult": ["Cardiology consult", "Pulmonology consult", "Infectious Disease consult",
+                     "Nephrology consult", "GI consult", "Orthopedic Surgery consult",
+                     "Neurology consult", "Palliative Care consult", "Social Work consult"],
+        "diet": ["NPO", "Clear liquid diet", "Regular diet", "Cardiac diet",
+                  "Renal diet", "Diabetic diet", "Mechanical soft diet"],
+        "nursing": ["Fall precautions", "Telemetry monitoring", "Strict I&O",
+                     "Wound care Q12H", "Foley catheter care", "DVT prophylaxis",
+                     "Blood glucose monitoring Q6H", "Neuro checks Q4H"],
+    }
+
+    rows = []
+    for i in range(2500):
+        enc_id, mrn, admit_dt, _ = random.choice(enc_meta)
+        otype = random.choices(order_types, weights=order_type_weights)[0]
+        desc = random.choice(order_descriptions[otype])
+        prov_id = random.randint(1, num_providers)
+        order_dt = _fmt(admit_dt + timedelta(hours=random.randint(0, 24)))
+        status = random.choices(statuses, weights=status_weights)[0]
+        priority = random.choices(priorities, weights=priority_weights)[0]
+        rows.append((enc_id, mrn, otype, desc, prov_id, order_dt, status, priority))
+    cur.executemany(
+        "INSERT INTO orders (encounter_id, patient_mrn, order_type, order_description, "
+        "ordering_provider_id, order_datetime, status, priority) "
+        "VALUES (?,?,?,?,?,?,?,?)",
+        rows,
+    )
+
+
+def _seed_allergies(cur, mrn_list):
+    """Generate 800 allergy records."""
+    rows = []
+    # Give roughly 50% of patients 1-5 allergies each to reach 800+
+    patients_with_allergies = random.sample(mrn_list, min(350, len(mrn_list)))
+    count = 0
+    for mrn in patients_with_allergies:
+        num = random.randint(1, 5)
+        selected = random.sample(ALLERGENS, k=min(num, len(ALLERGENS)))
+        for allergen, atype, reaction, severity in selected:
+            reported = _date_only(_random_dt(datetime(2000, 1, 1), datetime(2026, 2, 25)))
+            status = random.choices(["active", "inactive"], weights=[90, 10])[0]
+            rows.append((mrn, allergen, atype, reaction, severity, reported, status))
+            count += 1
+            if count >= 800:
+                break
+        if count >= 800:
+            break
+    cur.executemany(
+        "INSERT INTO allergies (patient_mrn, allergen, allergy_type, reaction, severity, "
+        "reported_date, status) VALUES (?,?,?,?,?,?,?)",
+        rows,
+    )
+
+
+def _seed_insurance_claims(cur, enc_meta):
+    """Generate 1500 insurance claims."""
+    rows = []
+    for i in range(1500):
+        enc_id, mrn, admit_dt, discharge_dt = random.choice(enc_meta)
+        plan = random.choice(INSURANCE_PLANS)
+        amount = round(random.uniform(200, 150000), 2)
+        claim_status = random.choices(
+            ["submitted", "pending", "paid", "denied", "appealed"],
+            weights=[15, 20, 40, 15, 10],
+        )[0]
+        if claim_status == "paid":
+            paid = round(amount * random.uniform(0.5, 1.0), 2)
+            denied_amt = round(amount - paid, 2)
+        elif claim_status == "denied":
+            paid = 0.0
+            denied_amt = amount
+        else:
+            paid = 0.0
+            denied_amt = 0.0
+        submitted = _fmt(discharge_dt + timedelta(days=random.randint(0, 14)))
+        resolved = None
+        denial_reason = None
+        if claim_status in ("paid", "denied"):
+            resolved = _fmt(discharge_dt + timedelta(days=random.randint(15, 90)))
+        if claim_status in ("denied", "appealed"):
+            denial_reason = random.choice(DENIAL_REASONS)
+        rows.append((
+            enc_id, mrn, plan, amount, paid, denied_amt,
+            claim_status, submitted, resolved, denial_reason,
+        ))
+    cur.executemany(
+        "INSERT INTO insurance_claims (encounter_id, patient_mrn, insurance_plan, "
+        "claim_amount, paid_amount, denied_amount, claim_status, submitted_date, "
+        "resolved_date, denial_reason) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        rows,
+    )
+
+
+def _seed_users(cur, now):
+    """Generate 40 EHR system users."""
+    roles = ["physician", "nurse", "admin", "analyst", "pharmacist"]
+    role_weights = [25, 35, 15, 15, 10]
+    rows = []
+    for i in range(40):
+        fn = fake.first_name() if HAS_FAKER else f"User{i}"
+        ln = fake.last_name() if HAS_FAKER else f"Last{i}"
+        username = f"{fn[0].lower()}{ln.lower()}{random.randint(1,99)}"
+        full_name = f"{fn} {ln}"
+        role = random.choices(roles, weights=role_weights)[0]
+        dept_id = random.randint(1, 15)
+        last_login = _fmt(_random_dt(now - timedelta(days=30), now))
+        active = 1 if random.random() < 0.90 else 0
+        access_level = {
+            "physician": random.choice([3, 4, 5]),
+            "nurse": random.choice([2, 3]),
+            "admin": 5,
+            "analyst": random.choice([3, 4]),
+            "pharmacist": random.choice([3, 4]),
+        }[role]
+        rows.append((username, full_name, role, dept_id, last_login, active, access_level))
+    cur.executemany(
+        "INSERT INTO users (username, full_name, role, department_id, last_login, active, access_level) "
+        "VALUES (?,?,?,?,?,?,?)",
+        rows,
+    )
+    return 40
+
+
+def _seed_audit_log(cur, num_users, mrn_list, now):
+    """Generate 5000 audit log entries."""
+    actions = ["view", "edit", "print", "export"]
+    action_weights = [60, 20, 10, 10]
+    resource_types = ["patient_chart", "lab_result", "medication_order",
+                      "encounter", "report", "user_account"]
+
+    rows = []
+    thirty_days_ago = now - timedelta(days=30)
+    for i in range(5000):
+        uid = random.randint(1, num_users)
+        action = random.choices(actions, weights=action_weights)[0]
+        rtype = random.choice(resource_types)
+        rid = str(random.randint(1, 1200))
+        ts = _fmt(_random_dt(thirty_days_ago, now))
+        ip = f"10.{random.randint(0,255)}.{random.randint(0,255)}.{random.randint(1,254)}"
+        details = None
+        if action == "export":
+            details = f"Exported {rtype} #{rid} to PDF"
+        elif action == "print":
+            details = f"Printed {rtype} #{rid}"
+        rows.append((uid, action, rtype, rid, ts, ip, details))
+    cur.executemany(
+        "INSERT INTO audit_log (user_id, action, resource_type, resource_id, timestamp, "
+        "ip_address, details) VALUES (?,?,?,?,?,?,?)",
+        rows,
+    )
+
+
+def _seed_hl7_messages(cur, mrn_list, enc_meta, now):
+    """Generate 200 HL7 messages."""
+    rows = []
+    thirty_days_ago = now - timedelta(days=30)
+    for i in range(200):
+        msg_type_info = random.choice(HL7_MESSAGE_TYPES)
+        mtype, trigger, desc = msg_type_info
+        sender = random.choice(SENDING_SYSTEMS)
+        receiver = random.choice(RECEIVING_SYSTEMS)
+        mrn = random.choice(mrn_list)
+        enc_id = random.choice(enc_meta)[0]
+        msg_dt = _fmt(_random_dt(thirty_days_ago, now))
+        status = random.choices(
+            ["sent", "received", "error", "acknowledged"],
+            weights=[15, 40, 15, 30],
+        )[0]
+
+        # Build a mini HL7-like preview
+        raw_preview = (
+            f"MSH|^~\\&|{sender}|MERIT_HEALTH|{receiver}|MERIT_HEALTH|"
+            f"{msg_dt.replace('-','').replace(':','').replace(' ','')}||"
+            f"{mtype}^{trigger}|MSG{random.randint(100000,999999)}|P|2.5.1\r"
+            f"PID|||{mrn}||..."
         )
-    conn.commit()
 
-    # ==================================================================
-    # Allergies (300)
-    # ==================================================================
-    print("[seed] Inserting allergies ...")
-    severities = ["mild", "moderate", "severe"]
-    sev_weights = [0.40, 0.40, 0.20]
-    for _ in range(300):
-        pat_id = random.choice(patient_ids)
-        allergen, a_type = random.choice(ALLERGENS)
-        reaction = random.choice(ALLERGY_REACTIONS)
-        severity = random.choices(severities, sev_weights)[0]
-        doc_date = _fmt_date(_random_dt(now - timedelta(days=365 * 5), now))
-        cur.execute(
-            "INSERT INTO allergies "
-            "(patient_id, allergen, reaction, severity, allergy_type, documented_date) "
-            "VALUES (?,?,?,?,?,?)",
-            (pat_id, allergen, reaction, severity, a_type, doc_date),
-        )
-    conn.commit()
+        rows.append((
+            mtype, trigger, sender, receiver, mrn, enc_id,
+            msg_dt, status, raw_preview[:200],
+        ))
+    cur.executemany(
+        "INSERT INTO hl7_messages (message_type, trigger_event, sending_system, receiving_system, "
+        "patient_mrn, encounter_id, message_datetime, status, raw_message_preview) "
+        "VALUES (?,?,?,?,?,?,?,?,?)",
+        rows,
+    )
 
-    # ==================================================================
-    # Orders (1000)
-    # ==================================================================
-    print("[seed] Inserting orders ...")
-    order_types = ["lab", "imaging", "consult", "diet", "activity"]
-    order_type_weights = [0.35, 0.25, 0.15, 0.15, 0.10]
-    priorities = ["routine", "urgent", "stat"]
-    priority_weights = [0.60, 0.25, 0.15]
-    order_statuses = ["ordered", "in_progress", "completed", "cancelled"]
-    order_status_weights = [0.15, 0.10, 0.65, 0.10]
 
-    order_text_map = {
-        "lab": [
-            "CBC with Differential", "BMP", "CMP", "Lipid Panel",
-            "Coagulation Panel (PT/INR/PTT)", "Urinalysis",
-            "Troponin I", "BNP", "HbA1c", "TSH",
-            "Blood Culture x2", "Procalcitonin", "Lactate Level",
-            "Type and Screen", "Magnesium Level",
+def _seed_system_alerts(cur, now):
+    """Generate 50 system alerts."""
+    alert_types = ["interface_error", "downtime", "security", "performance"]
+    severities = ["info", "warning", "critical"]
+    source_systems = [
+        "EHR_Core", "LabInterface_Engine", "RadPACS", "PharmacySystem",
+        "ADT_Interface", "BillingEngine", "HIE_Gateway", "Firewall",
+        "DatabaseServer", "ApplicationServer", "NetworkSwitch", "StorageArray",
+    ]
+    messages_by_type = {
+        "interface_error": [
+            "HL7 ACK timeout from LabCorp interface after 30s",
+            "Failed to parse ORU message from Quest - invalid OBX segment",
+            "Connection refused by RadPACS on port 2575",
+            "Duplicate message control ID detected in ADT feed",
+            "Character encoding mismatch in SIU message from OR Scheduling",
         ],
-        "imaging": [
-            "Chest X-ray PA and Lateral", "CT Abdomen Pelvis with Contrast",
-            "MRI Brain with and without Contrast", "CT Head without Contrast",
-            "Portable Chest X-ray", "Abdominal Ultrasound",
-            "CT Angiogram Chest", "MRI Lumbar Spine without Contrast",
-            "Bilateral Lower Extremity Doppler Ultrasound",
-            "Echocardiogram Transthoracic",
+        "downtime": [
+            "Scheduled maintenance window: EHR Core 02:00-04:00",
+            "Unscheduled downtime: Lab Interface offline",
+            "Database failover initiated - primary node unresponsive",
+            "Pharmacy dispensing system restart required",
+            "PACS image archive migration in progress - read only mode",
         ],
-        "consult": [
-            "Cardiology Consult", "Pulmonology Consult", "GI Consult",
-            "Nephrology Consult", "Infectious Disease Consult",
-            "Surgery Consult", "Neurology Consult", "Psychiatry Consult",
-            "Palliative Care Consult", "Wound Care Consult",
+        "security": [
+            "Multiple failed login attempts detected for user account",
+            "Unusual after-hours access pattern detected",
+            "VPN connection from unrecognized IP range",
+            "PHI access from terminated employee account",
+            "Brute force attack detected on authentication endpoint",
         ],
-        "diet": [
-            "Regular Diet", "Cardiac Diet", "Diabetic Diet", "NPO",
-            "Clear Liquids", "Renal Diet", "Low Sodium Diet",
-            "Mechanical Soft Diet",
-        ],
-        "activity": [
-            "Bedrest", "Up Ad Lib", "Ambulate TID", "Fall Precautions",
-            "Physical Therapy Evaluation", "OT Evaluation",
-            "Wheelchair Only", "Weight Bearing as Tolerated",
+        "performance": [
+            "Database query response time exceeds 5s threshold",
+            "Memory utilization above 90% on application server",
+            "Disk I/O latency spike on storage array",
+            "HL7 message queue depth exceeds 500 messages",
+            "CPU utilization at 95% on interface engine",
         ],
     }
 
-    for _ in range(1000):
-        enc = random.choice(encounter_data)
-        eid, pat_id = enc[0], enc[1]
-        otype = random.choices(order_types, order_type_weights)[0]
-        otext = random.choice(order_text_map[otype])
-        priority = random.choices(priorities, priority_weights)[0]
-        ostatus = random.choices(order_statuses, order_status_weights)[0]
-        ordered_at = _random_dt(enc[4], _enc_end(enc))
-        completed_at = None
-        if ostatus == "completed":
-            completed_at = ordered_at + timedelta(hours=random.randint(1, 48))
-        ord_prov = random.choice(provider_ids)
-        cur.execute(
-            "INSERT INTO orders "
-            "(encounter_id, patient_id, ordering_provider_id, "
-            " order_type, order_text, priority, status, "
-            " ordered_at, completed_at) "
-            "VALUES (?,?,?,?,?,?,?,?,?)",
-            (eid, pat_id, ord_prov,
-             otype, otext, priority, ostatus,
-             _fmt(ordered_at), _fmt(completed_at) if completed_at else None),
-        )
-    conn.commit()
-
-    # ==================================================================
-    # Beds (200)
-    # ==================================================================
-    print("[seed] Inserting beds ...")
-    beds_per_dept = dict(dept_bed_map)  # copy
-    total_planned = sum(beds_per_dept.values())
-    if total_planned < 200:
-        extra = 200 - total_planned
-        expandable = [3, 1, 2, 6, 4, 5]  # MEDSURG, ED, ICU, CARD, PEDS, OBGYN
-        i = 0
-        while extra > 0:
-            d = expandable[i % len(expandable)]
-            beds_per_dept[d] = beds_per_dept.get(d, 0) + 1
-            extra -= 1
-            i += 1
-
-    # Pool of patients in active encounters for bed assignment
-    active_patient_pool = [e[1] for e in encounter_data if e[6] == "active"]
-    random.shuffle(active_patient_pool)
-
-    for dept_id, num_beds in sorted(beds_per_dept.items()):
-        for b in range(1, num_beds + 1):
-            room = f"{dept_id * 100 + (b - 1) // 2 + 1}"
-            bed_letter = "A" if b % 2 == 1 else "B"
-            bed_num = f"{room}-{bed_letter}"
-
-            r = random.random()
-            if r < 0.25 and active_patient_pool:
-                bstatus = "occupied"
-                cpat = active_patient_pool.pop()
-            elif r < 0.30:
-                bstatus = "cleaning"
-                cpat = None
-            elif r < 0.33:
-                bstatus = "maintenance"
-                cpat = None
-            else:
-                bstatus = "available"
-                cpat = None
-
-            cur.execute(
-                "INSERT INTO beds (department_id, bed_number, room_number, status, current_patient_id) "
-                "VALUES (?,?,?,?,?)",
-                (dept_id, bed_num, room, bstatus, cpat),
-            )
-    conn.commit()
-
-    # ==================================================================
-    # Staff Schedule (~500 entries over last 7 days)
-    # ==================================================================
-    print("[seed] Inserting staff schedules ...")
-    roles = ["Attending", "Resident", "Nurse", "Charge Nurse", "CNA", "RT", "Pharmacist"]
-    shift_templates = [
-        ("07:00", "19:00"),
-        ("19:00", "07:00"),
-        ("07:00", "15:00"),
-        ("15:00", "23:00"),
-        ("23:00", "07:00"),
-    ]
-    for _ in range(500):
-        prov = random.choice(provider_ids)
-        dept = random.choice(dept_ids)
-        shift_date = _fmt_date(now - timedelta(days=random.randint(0, 7)))
-        shift_start, shift_end = random.choice(shift_templates)
-        role = random.choice(roles)
-        cur.execute(
-            "INSERT INTO staff_schedule "
-            "(provider_id, shift_date, shift_start, shift_end, department_id, role) "
-            "VALUES (?,?,?,?,?,?)",
-            (prov, shift_date, shift_start, shift_end, dept, role),
-        )
-    conn.commit()
-
-    # ==================================================================
-    # Audit Log (500)
-    # ==================================================================
-    print("[seed] Inserting audit log entries ...")
-    actions = [
-        "CREATE", "READ", "UPDATE", "DELETE",
-        "LOGIN", "LOGOUT", "PRINT", "EXPORT", "VIEW",
-    ]
-    table_names = [
-        "patients", "encounters", "medication_orders", "lab_results",
-        "vital_signs", "orders", "diagnoses", "procedures", "providers",
-    ]
-    for _ in range(500):
-        user_id = random.choice(provider_ids)
-        action = random.choice(actions)
-        table = random.choice(table_names)
-        record_id = random.randint(1, 1000)
-        old_val = None
-        new_val = None
-        if action == "UPDATE":
-            old_val = f'{{"status": "{random.choice(["active", "completed"])}"}}'
-            new_val = f'{{"status": "{random.choice(["discharged", "discontinued"])}"}}'
-        ts = _fmt(_random_dt(ninety_days_ago, now))
-        ip = fake.ipv4()
-        cur.execute(
-            "INSERT INTO audit_log "
-            "(user_id, action, table_name, record_id, old_value, new_value, timestamp, ip_address) "
-            "VALUES (?,?,?,?,?,?,?,?)",
-            (user_id, action, table, record_id, old_val, new_val, ts, ip),
-        )
-    conn.commit()
-
-    # ==================================================================
-    # Clinical Alerts (150)
-    # ==================================================================
-    print("[seed] Inserting clinical alerts ...")
-    alert_types = ["drug_interaction", "allergy", "critical_lab", "fall_risk"]
-    alert_type_weights = [0.25, 0.25, 0.30, 0.20]
-    alert_severities = ["low", "medium", "high", "critical"]
-    alert_sev_weights = [0.20, 0.35, 0.30, 0.15]
-    alert_messages = {
-        "drug_interaction": [
-            "Potential interaction between Warfarin and Aspirin",
-            "Concomitant use of ACE Inhibitor and Potassium supplement may increase risk of hyperkalemia",
-            "Duplicate therapy alert: Two beta-blockers ordered",
-            "NSAID may reduce effectiveness of antihypertensive therapy",
-            "Serotonin syndrome risk: concurrent SSRI and Tramadol",
-        ],
-        "allergy": [
-            "Patient has documented allergy to Penicillin - Cephalosporin ordered (cross-reactivity risk)",
-            "Patient allergic to Sulfa drugs - Trimethoprim-Sulfamethoxazole ordered",
-            "Contrast dye allergy - CT with contrast ordered, pre-medication required",
-            "NSAID allergy documented - Ibuprofen ordered",
-            "Latex allergy alert for upcoming procedure",
-        ],
-        "critical_lab": [
-            "CRITICAL: Potassium 6.2 mEq/L (ref: 3.5-5.0)",
-            "CRITICAL: Troponin I 2.45 ng/mL (ref: <0.04)",
-            "CRITICAL: Hemoglobin 6.1 g/dL (ref: 12.0-17.5)",
-            "CRITICAL: Glucose 42 mg/dL (ref: 70-100)",
-            "CRITICAL: INR 5.8 (ref: 0.8-1.1)",
-            "CRITICAL: Sodium 118 mEq/L (ref: 136-145)",
-            "CRITICAL: Platelet Count 22 x10^3/uL (ref: 150-400)",
-        ],
-        "fall_risk": [
-            "High fall risk: Morse Fall Scale score 55",
-            "Fall risk: Patient on multiple sedating medications",
-            "Fall risk reassessment due: previous fall during admission",
-            "Elevated fall risk: age >65, gait instability, psychoactive medications",
-        ],
-    }
-    alert_statuses = ["active", "acknowledged", "resolved"]
-    alert_status_weights = [0.30, 0.35, 0.35]
-
-    for _ in range(150):
-        enc = random.choice(encounter_data)
-        eid, pat_id = enc[0], enc[1]
-        atype = random.choices(alert_types, alert_type_weights)[0]
-        sev = random.choices(alert_severities, alert_sev_weights)[0]
-        msg = random.choice(alert_messages[atype])
-        astatus = random.choices(alert_statuses, alert_status_weights)[0]
-        created = _random_dt(enc[4], _enc_end(enc))
-        ack_by = None
-        ack_at = None
-        if astatus in ("acknowledged", "resolved"):
-            ack_by = random.choice(provider_ids)
-            ack_at = _fmt(created + timedelta(minutes=random.randint(1, 120)))
-        cur.execute(
-            "INSERT INTO clinical_alerts "
-            "(patient_id, encounter_id, alert_type, severity, message, "
-            " status, created_at, acknowledged_by, acknowledged_at) "
-            "VALUES (?,?,?,?,?,?,?,?,?)",
-            (pat_id, eid, atype, sev, msg, astatus,
-             _fmt(created), ack_by, ack_at),
-        )
-    conn.commit()
-
-    # ==================================================================
-    # Quality Measures (20)
-    # ==================================================================
-    print("[seed] Inserting quality measures ...")
-    reporting_periods = ["2025-Q3", "2025-Q4", "2026-Q1"]
-    for measure_name, measure_code, _ in QUALITY_MEASURES:
-        denom = random.randint(50, 500)
-        rate = round(random.uniform(0.50, 0.99), 4)
-        numer = int(denom * rate)
-        period = random.choice(reporting_periods)
-        dept = random.choice(dept_ids)
-        cur.execute(
-            "INSERT INTO quality_measures "
-            "(measure_name, measure_code, numerator, denominator, rate, "
-            " reporting_period, department_id) "
-            "VALUES (?,?,?,?,?,?,?)",
-            (measure_name, measure_code, numer, denom, rate, period, dept),
-        )
-    conn.commit()
-
-    # ==================================================================
-    # HL7 Messages (100)
-    # ==================================================================
-    print("[seed] Inserting HL7 messages ...")
-    hl7_types = ["ADT", "ORM", "ORU", "DFT"]
-    hl7_type_weights = [0.35, 0.25, 0.30, 0.10]
-    directions = ["inbound", "outbound"]
-    facilities = [
-        "MAIN_HOSP", "LAB_SYSTEM", "RAD_SYSTEM", "BILLING",
-        "PHARMACY", "EXTERNAL_LAB", "HIE_NETWORK", "PACS",
-    ]
-    hl7_statuses = ["received", "processed", "error"]
-    hl7_status_weights = [0.10, 0.82, 0.08]
-
-    for _ in range(100):
-        mtype = random.choices(hl7_types, hl7_type_weights)[0]
-        direction = random.choice(directions)
-        sending = random.choice(facilities)
-        receiving = random.choice([f for f in facilities if f != sending])
-        ts = _random_dt(ninety_days_ago, now)
-        msg_ctrl_id = "".join(random.choices(string.digits, k=10))
-        content = (
-            f"MSH|^~\\&|{sending}|{sending}|{receiving}|{receiving}|"
-            f"{ts.strftime('%Y%m%d%H%M%S')}||{mtype}^A01|{msg_ctrl_id}|P|2.5.1\r"
-            f"EVN|A01|{ts.strftime('%Y%m%d%H%M%S')}\r"
-            f"PID|1||{random.randint(100000, 999999)}||DOE^JOHN||19800101|M\r"
-        )
-        hstatus = random.choices(hl7_statuses, hl7_status_weights)[0]
-        processed_at = None
-        error_msg = None
-        if hstatus == "processed":
-            processed_at = _fmt(ts + timedelta(seconds=random.randint(1, 30)))
-        elif hstatus == "error":
-            processed_at = _fmt(ts + timedelta(seconds=random.randint(1, 30)))
-            error_msg = random.choice([
-                "Invalid patient identifier",
-                "Duplicate message control ID",
-                "Required field PID-3 missing",
-                "Unknown sending facility",
-                "Message validation failed: segment order",
-                "Acknowledgment timeout",
-            ])
-        cur.execute(
-            "INSERT INTO hl7_messages "
-            "(message_type, direction, sending_facility, receiving_facility, "
-            " message_content, status, created_at, processed_at, error_message) "
-            "VALUES (?,?,?,?,?,?,?,?,?)",
-            (mtype, direction, sending, receiving, content,
-             hstatus, _fmt(ts), processed_at, error_msg),
-        )
-    conn.commit()
-
-    # ==================================================================
-    # System Status (8)
-    # ==================================================================
-    print("[seed] Inserting system status ...")
-    for sys_name, sys_status in SYSTEMS:
-        # Occasionally degrade a system
-        if random.random() < 0.1:
-            sys_status = "degraded"
-        resp_time = (
-            random.randint(5, 250)
-            if sys_status == "operational"
-            else random.randint(500, 5000)
-        )
-        notes = None
-        if sys_status == "degraded":
-            notes = random.choice([
-                "Elevated response times observed",
-                "Intermittent connectivity issues",
-                "Scheduled maintenance window approaching",
-            ])
-        cur.execute(
-            "INSERT INTO system_status "
-            "(system_name, status, last_check, response_time_ms, notes) "
-            "VALUES (?,?,?,?,?)",
-            (sys_name, sys_status, _fmt(now), resp_time, notes),
-        )
-    conn.commit()
-    conn.close()
-    print(f"[seed] Seeding complete for {db_path}")
+    rows = []
+    for i in range(50):
+        atype = random.choices(alert_types, weights=[30, 20, 25, 25])[0]
+        sev = random.choices(severities, weights=[40, 35, 25])[0]
+        source = random.choice(source_systems)
+        msg = random.choice(messages_by_type[atype])
+        created = _fmt(_random_dt(now - timedelta(days=7), now))
+        ack = 1 if random.random() < 0.6 else 0
+        ack_by = f"admin_{random.randint(1,5)}" if ack else None
+        rows.append((atype, sev, source, msg, created, ack, ack_by))
+    cur.executemany(
+        "INSERT INTO system_alerts (alert_type, severity, source_system, message, "
+        "created_at, acknowledged, acknowledged_by) VALUES (?,?,?,?,?,?,?)",
+        rows,
+    )
 
 
 # ---------------------------------------------------------------------------
-# Main entry point
+# Public API
+# ---------------------------------------------------------------------------
+
+def get_db(db_path=DEFAULT_DB_PATH):
+    """Return an sqlite3.Connection for the given database path."""
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
+
+
+def init_db(db_path=DEFAULT_DB_PATH):
+    """Create all tables and seed with realistic fake data.
+
+    If the database file already exists, it is removed first so that
+    every call yields a clean, reproducible dataset.
+    """
+    # Reset seeds for reproducibility
+    random.seed(42)
+    if HAS_FAKER:
+        Faker.seed(42)
+    # Reset counters
+    _mrn._counter = 0
+    _npi._counter = 1000000000
+
+    if os.path.exists(db_path):
+        os.remove(db_path)
+
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA foreign_keys = ON")
+    cur = conn.cursor()
+
+    # Create schema
+    cur.executescript(SCHEMA_SQL)
+
+    now = datetime(2026, 2, 25, 12, 0, 0)
+
+    # Seed in dependency order
+    _seed_departments(cur)
+    num_providers = _seed_providers(cur, now)
+    mrn_list = _seed_patients(cur, num_providers, now)
+    enc_meta = _seed_encounters(cur, mrn_list, num_providers, now)
+    _seed_diagnoses(cur, enc_meta, num_providers)
+    _seed_procedures(cur, enc_meta, num_providers)
+    _seed_medications(cur, enc_meta, num_providers)
+    _seed_lab_results(cur, enc_meta, num_providers)
+    _seed_vital_signs(cur, enc_meta, num_providers)
+    _seed_orders(cur, enc_meta, num_providers)
+    _seed_allergies(cur, mrn_list)
+    _seed_insurance_claims(cur, enc_meta)
+    num_users = _seed_users(cur, now)
+    _seed_audit_log(cur, num_users, mrn_list, now)
+    _seed_hl7_messages(cur, mrn_list, enc_meta, now)
+    _seed_system_alerts(cur, now)
+
+    conn.commit()
+    conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Standalone usage
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    db_file = sys.argv[1] if len(sys.argv) > 1 else "hinfo.db"
-    init_db(db_file)
-    seed_data(db_file)
-    print("Database created and seeded successfully!")
+    import sys
+    db = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_DB_PATH
+    print(f"Initializing database at {db} ...")
+    init_db(db)
+    print("Done. Verifying row counts ...")
+    conn = get_db(db)
+    tables = [
+        "departments", "providers", "patients", "encounters", "diagnoses",
+        "procedures", "medications", "lab_results", "vital_signs", "orders",
+        "allergies", "insurance_claims", "users", "audit_log", "hl7_messages",
+        "system_alerts",
+    ]
+    for t in tables:
+        count = conn.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+        print(f"  {t:25s} {count:>6,d} rows")
+    conn.close()
+    print("All tables seeded successfully.")
