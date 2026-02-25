@@ -1647,6 +1647,100 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 }
 
 /* ================================================================
+   TOOL PANELS (HL7, Coding, Report, Audit)
+   ================================================================ */
+.tool-panel-layout{
+  display:flex;flex:1;overflow:hidden;flex-direction:column;
+}
+.tool-tabs{
+  display:flex;gap:0;border-bottom:1px solid var(--border-color);
+  background:var(--bg-secondary);flex-shrink:0;overflow-x:auto;
+}
+.tool-tab{
+  padding:10px 16px;font-size:0.8rem;font-weight:500;
+  background:none;border:none;color:var(--text-secondary);
+  border-bottom:2px solid transparent;
+  transition:all var(--transition-fast);white-space:nowrap;
+}
+.tool-tab:hover{color:var(--text-primary);background:var(--bg-tertiary)}
+.tool-tab.active{color:var(--color-primary);border-bottom-color:var(--color-primary)}
+.tool-content{flex:1;overflow-y:auto;position:relative}
+.tool-section{display:none;padding:16px;animation:fadeIn 0.2s ease}
+.tool-section.active{display:block}
+.tool-editor{
+  width:100%;padding:12px;
+  background:var(--code-bg);border:1px solid var(--border-color);
+  color:var(--code-text);font-family:var(--font-mono);font-size:0.85rem;
+  line-height:1.5;resize:vertical;outline:none;border-radius:var(--radius-sm);
+}
+.tool-result{
+  margin-top:12px;max-height:calc(100vh - 300px);overflow-y:auto;
+}
+.tool-result pre{
+  background:var(--code-bg);border:1px solid var(--border-color);
+  border-radius:var(--radius-sm);padding:12px;
+  font-family:var(--font-mono);font-size:0.8rem;color:var(--code-text);
+  white-space:pre-wrap;word-break:break-word;overflow-x:auto;
+}
+.tool-result-card{
+  background:var(--bg-secondary);border:1px solid var(--border-color);
+  border-radius:var(--radius-md);padding:14px;margin-bottom:10px;
+}
+.tool-result-card h4{font-size:0.9rem;margin-bottom:6px;color:var(--text-primary)}
+.tool-result-card p{font-size:0.82rem;color:var(--text-secondary);line-height:1.5}
+.tool-result-card .label{font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px}
+.tool-result-card .value{font-size:0.9rem;color:var(--text-primary);font-weight:500}
+.tool-kpi-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.tool-kpi{
+  flex:1;min-width:120px;padding:12px;
+  background:var(--bg-secondary);border:1px solid var(--border-color);
+  border-radius:var(--radius-md);text-align:center;
+}
+.tool-kpi .tool-kpi-value{font-size:1.4rem;font-weight:700;color:var(--color-primary)}
+.tool-kpi .tool-kpi-label{font-size:0.72rem;color:var(--text-muted);margin-top:2px;text-transform:uppercase}
+.severity-critical{color:var(--color-danger);font-weight:600}
+.severity-high{color:#F85149;font-weight:500}
+.severity-medium{color:var(--color-warning)}
+.severity-low{color:var(--text-secondary)}
+.severity-info{color:var(--color-primary)}
+.hl7-message-block{
+  background:var(--code-bg);border:1px solid var(--border-color);
+  border-radius:var(--radius-sm);padding:10px;margin-bottom:8px;
+  font-family:var(--font-mono);font-size:0.78rem;color:var(--code-text);
+  white-space:pre-wrap;word-break:break-all;cursor:pointer;
+  transition:border-color var(--transition-fast);
+}
+.hl7-message-block:hover{border-color:var(--color-primary)}
+.hl7-segment{color:var(--color-accent)}
+.hl7-field-sep{color:var(--text-muted)}
+
+/* Report Builder specific */
+.report-layout{
+  display:flex;flex:1;overflow:hidden;
+}
+.report-sidebar{
+  width:220px;flex-shrink:0;overflow-y:auto;
+  padding:16px;border-right:1px solid var(--border-color);
+  background:var(--bg-secondary);
+}
+.report-template-item{
+  padding:8px 12px;margin-bottom:4px;
+  border-radius:var(--radius-sm);cursor:pointer;
+  transition:all var(--transition-fast);font-size:0.82rem;
+  color:var(--text-secondary);
+}
+.report-template-item:hover{background:var(--bg-tertiary);color:var(--text-primary)}
+.report-template-item.active{background:var(--bg-tertiary);color:var(--color-primary);font-weight:500}
+.report-main{
+  flex:1;overflow-y:auto;padding:16px;
+}
+.report-section{
+  background:var(--bg-secondary);border:1px solid var(--border-color);
+  border-radius:var(--radius-md);padding:16px;margin-bottom:12px;
+}
+.report-section h4{color:var(--color-primary);margin-bottom:10px;font-size:0.9rem}
+
+/* ================================================================
    HELP PANEL
    ================================================================ */
 .help-layout{
@@ -2068,6 +2162,22 @@ input,select,textarea{font-family:inherit;font-size:inherit}
         🐍
         <span class="tooltip">Python</span>
       </button>
+      <button class="nav-item" data-panel="hl7" title="Interface Monitor">
+        🔌
+        <span class="tooltip">Interface Monitor</span>
+      </button>
+      <button class="nav-item" data-panel="coding" title="Data Mapping Studio">
+        🗂️
+        <span class="tooltip">Data Mapping</span>
+      </button>
+      <button class="nav-item" data-panel="report" title="Analytics & Reporting">
+        📝
+        <span class="tooltip">Reporting</span>
+      </button>
+      <button class="nav-item" data-panel="audit" title="Compliance & Audit">
+        🛡️
+        <span class="tooltip">Compliance</span>
+      </button>
       <button class="nav-item" data-panel="help" title="Help">
         ❓
         <span class="tooltip">Help / Reference</span>
@@ -2223,6 +2333,214 @@ print(f"Total patients: {cursor.fetchone()[0]}")</textarea>
             <summary>Example Snippets</summary>
             <div class="snippet-list" id="python-snippets"></div>
           </details>
+        </div>
+      </div>
+
+      <!-- INTERFACE MONITOR PANEL -->
+      <div class="panel" id="panel-hl7">
+        <div class="panel-header">
+          <h2>🔌 Interface Monitor</h2>
+        </div>
+        <div class="tool-panel-layout">
+          <div class="tool-tabs">
+            <button class="tool-tab active" data-hl7tab="messages">Message Feed</button>
+            <button class="tool-tab" data-hl7tab="parse">Message Viewer</button>
+            <button class="tool-tab" data-hl7tab="validate">Validation</button>
+            <button class="tool-tab" data-hl7tab="errors">Error Queue</button>
+            <button class="tool-tab" data-hl7tab="reference">Segment Reference</button>
+          </div>
+          <div class="tool-content" id="hl7-content">
+            <div class="tool-section active" id="hl7-tab-messages">
+              <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+                <label style="font-size:0.85rem;color:var(--text-secondary)">Sample count:</label>
+                <input type="number" id="hl7-msg-count" value="5" min="1" max="20" style="width:60px;padding:6px;background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm)">
+                <button class="btn-execute" id="btn-hl7-generate">Load Feed</button>
+              </div>
+              <div id="hl7-messages-list" style="font-family:var(--font-mono);font-size:0.8rem">
+                <div style="padding:20px;text-align:center;color:var(--text-muted)">Click "Load Feed" to pull recent messages from the interface engine</div>
+              </div>
+            </div>
+            <div class="tool-section" id="hl7-tab-parse">
+              <textarea class="tool-editor" id="hl7-parse-input" placeholder="Paste a message from the feed to inspect segments and fields..." rows="8" spellcheck="false"></textarea>
+              <div style="margin-top:8px"><button class="btn-execute" id="btn-hl7-parse">Inspect Message</button></div>
+              <div id="hl7-parse-result" class="tool-result"></div>
+            </div>
+            <div class="tool-section" id="hl7-tab-validate">
+              <textarea class="tool-editor" id="hl7-validate-input" placeholder="Paste a message to check ACK/NACK rules and conformance..." rows="8" spellcheck="false"></textarea>
+              <div style="margin-top:8px"><button class="btn-execute" id="btn-hl7-validate">Run Validation</button></div>
+              <div id="hl7-validate-result" class="tool-result"></div>
+            </div>
+            <div class="tool-section" id="hl7-tab-errors">
+              <button class="btn-execute" id="btn-hl7-errors" style="margin-bottom:12px">Scan Error Queue</button>
+              <div id="hl7-errors-result" class="tool-result">
+                <div style="padding:20px;text-align:center;color:var(--text-muted)">Scan inbound/outbound feeds for failed messages and retry status</div>
+              </div>
+            </div>
+            <div class="tool-section" id="hl7-tab-reference">
+              <div id="hl7-reference-content" style="padding:20px;text-align:center;color:var(--text-muted)">
+                <div class="spinner"></div><p style="margin-top:8px">Loading reference...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DATA MAPPING STUDIO PANEL -->
+      <div class="panel" id="panel-coding">
+        <div class="panel-header">
+          <h2>🗂️ Data Mapping Studio</h2>
+        </div>
+        <div class="tool-panel-layout">
+          <div class="tool-tabs">
+            <button class="tool-tab active" data-codingtab="search">Code Lookup</button>
+            <button class="tool-tab" data-codingtab="validate">Code Validation</button>
+            <button class="tool-tab" data-codingtab="suggest">Auto-Suggest</button>
+            <button class="tool-tab" data-codingtab="crosswalk">Terminology Crosswalk</button>
+            <button class="tool-tab" data-codingtab="drg">DRG Grouper</button>
+          </div>
+          <div class="tool-content" id="coding-content">
+            <div class="tool-section active" id="coding-tab-search">
+              <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+                <select id="coding-search-type" style="padding:6px 10px;background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm)">
+                  <option value="icd10">ICD-10-CM</option>
+                  <option value="cpt">CPT</option>
+                </select>
+                <input type="text" id="coding-search-input" placeholder="Search by code or description..." style="flex:1;min-width:200px;padding:6px 10px;background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm)">
+                <button class="btn-execute" id="btn-coding-search">Search</button>
+              </div>
+              <div id="coding-search-result" class="tool-result">
+                <div style="padding:20px;text-align:center;color:var(--text-muted)">Enter a code or keyword to search</div>
+              </div>
+            </div>
+            <div class="tool-section" id="coding-tab-validate">
+              <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+                <select id="coding-validate-type" style="padding:6px 10px;background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm)">
+                  <option value="icd10">ICD-10-CM</option>
+                  <option value="cpt">CPT</option>
+                </select>
+                <input type="text" id="coding-validate-input" placeholder="Enter a code to validate..." style="flex:1;padding:6px 10px;background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm)">
+                <button class="btn-execute" id="btn-coding-validate">Validate</button>
+              </div>
+              <div id="coding-validate-result" class="tool-result"></div>
+            </div>
+            <div class="tool-section" id="coding-tab-suggest">
+              <textarea class="tool-editor" id="coding-suggest-input" placeholder="Paste clinical documentation (e.g., 'Patient presents with chest pain and shortness of breath, history of type 2 diabetes and hypertension')..." rows="6" spellcheck="false"></textarea>
+              <div style="margin-top:8px"><button class="btn-execute" id="btn-coding-suggest">Suggest Codes</button></div>
+              <div id="coding-suggest-result" class="tool-result"></div>
+            </div>
+            <div class="tool-section" id="coding-tab-crosswalk">
+              <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+                <input type="text" id="coding-snomed-input" placeholder="Enter SNOMED CT code..." style="flex:1;padding:6px 10px;background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm)">
+                <button class="btn-execute" id="btn-coding-crosswalk">Map to ICD-10</button>
+              </div>
+              <div id="coding-crosswalk-result" class="tool-result">
+                <div style="padding:20px;text-align:center;color:var(--text-muted)">Enter a SNOMED CT code to find ICD-10-CM mappings</div>
+              </div>
+            </div>
+            <div class="tool-section" id="coding-tab-drg">
+              <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+                <input type="text" id="coding-drg-input" placeholder="Enter MS-DRG code (e.g., 470)..." style="flex:1;padding:6px 10px;background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm)">
+                <button class="btn-execute" id="btn-coding-drg">Lookup DRG</button>
+              </div>
+              <div id="coding-drg-result" class="tool-result">
+                <div style="padding:20px;text-align:center;color:var(--text-muted)">Enter a DRG code to view details</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ANALYTICS & REPORTING PANEL -->
+      <div class="panel" id="panel-report">
+        <div class="panel-header">
+          <h2>📝 Analytics & Reporting</h2>
+        </div>
+        <div class="tool-panel-layout">
+          <div class="report-layout">
+            <div class="report-sidebar">
+              <h4 style="margin-bottom:12px;color:var(--text-secondary);font-size:0.85rem;text-transform:uppercase;letter-spacing:0.5px">Report Templates</h4>
+              <div id="report-template-list" style="display:flex;flex-direction:column;gap:4px">
+                <div style="padding:20px;text-align:center;color:var(--text-muted)"><div class="spinner"></div></div>
+              </div>
+            </div>
+            <div class="report-main">
+              <div id="report-config" style="display:none">
+                <h3 id="report-selected-name" style="margin-bottom:8px"></h3>
+                <p id="report-selected-desc" style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:16px"></p>
+                <div id="report-params" style="margin-bottom:12px"></div>
+                <button class="btn-execute" id="btn-report-generate">Generate Report</button>
+              </div>
+              <div id="report-output" class="tool-result">
+                <div style="padding:40px;text-align:center;color:var(--text-muted)">Select a report template from the left to get started</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMPLIANCE & AUDIT PANEL -->
+      <div class="panel" id="panel-audit">
+        <div class="panel-header">
+          <h2>🛡️ Compliance & Audit Console</h2>
+        </div>
+        <div class="tool-panel-layout">
+          <div class="tool-tabs">
+            <button class="tool-tab active" data-audittab="analyze">Access Review</button>
+            <button class="tool-tab" data-audittab="anomalies">Anomaly Scanner</button>
+            <button class="tool-tab" data-audittab="timeline">Activity Log</button>
+            <button class="tool-tab" data-audittab="report">Compliance Report</button>
+            <button class="tool-tab" data-audittab="matrix">RBAC Matrix</button>
+          </div>
+          <div class="tool-content" id="audit-content">
+            <div class="tool-section active" id="audit-tab-analyze">
+              <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+                <input type="text" id="audit-user-id" placeholder="User ID (leave empty for overview)" style="flex:1;padding:6px 10px;background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm)">
+                <button class="btn-execute" id="btn-audit-analyze">Analyze Access</button>
+              </div>
+              <div id="audit-analyze-result" class="tool-result">
+                <div style="padding:20px;text-align:center;color:var(--text-muted)">Analyze user access patterns and identify risk indicators</div>
+              </div>
+            </div>
+            <div class="tool-section" id="audit-tab-anomalies">
+              <button class="btn-execute" id="btn-audit-anomalies" style="margin-bottom:12px">Detect Anomalies</button>
+              <div id="audit-anomalies-result" class="tool-result">
+                <div style="padding:20px;text-align:center;color:var(--text-muted)">Scan for suspicious access patterns, after-hours access, and policy violations</div>
+              </div>
+            </div>
+            <div class="tool-section" id="audit-tab-timeline">
+              <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+                <select id="audit-resource-type" style="padding:6px 10px;background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm)">
+                  <option value="patient_chart">Patient Chart</option>
+                  <option value="encounter">Encounter</option>
+                  <option value="lab_result">Lab Result</option>
+                  <option value="medication">Medication</option>
+                </select>
+                <input type="text" id="audit-resource-id" placeholder="Resource ID..." style="flex:1;min-width:120px;padding:6px 10px;background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm)">
+                <button class="btn-execute" id="btn-audit-timeline">View Timeline</button>
+              </div>
+              <div id="audit-timeline-result" class="tool-result">
+                <div style="padding:20px;text-align:center;color:var(--text-muted)">Track all access events for a specific resource</div>
+              </div>
+            </div>
+            <div class="tool-section" id="audit-tab-report">
+              <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+                <label style="font-size:0.85rem;color:var(--text-secondary)">Start:</label>
+                <input type="date" id="audit-start-date" style="padding:6px;background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm)">
+                <label style="font-size:0.85rem;color:var(--text-secondary)">End:</label>
+                <input type="date" id="audit-end-date" style="padding:6px;background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm)">
+                <button class="btn-execute" id="btn-audit-report">Generate Audit Report</button>
+              </div>
+              <div id="audit-report-result" class="tool-result">
+                <div style="padding:20px;text-align:center;color:var(--text-muted)">Generate a comprehensive HIPAA-style audit report for a date range</div>
+              </div>
+            </div>
+            <div class="tool-section" id="audit-tab-matrix">
+              <button class="btn-execute" id="btn-audit-matrix" style="margin-bottom:12px">Generate Role Matrix</button>
+              <div id="audit-matrix-result" class="tool-result">
+                <div style="padding:20px;text-align:center;color:var(--text-muted)">View role-based access control matrix showing access patterns by role</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -2774,6 +3092,10 @@ function renderTaskDetail() {
           <option value="python">Python</option>
           <option value="ehr">EHR Review</option>
           <option value="dashboard">Dashboard</option>
+          <option value="hl7">Interface Monitor</option>
+          <option value="coding">Data Mapping Studio</option>
+          <option value="report">Analytics & Reporting</option>
+          <option value="audit">Compliance & Audit</option>
           <option value="manual">Manual Analysis</option>
         </select>
         <button class="btn-submit-work" onclick="submitWork('${task.id}')">Submit Work</button>
@@ -3867,6 +4189,579 @@ setInterval(async () => {
     updateTaskProgress();
   } catch (e) { /* silent */ }
 }, 30000);
+
+/* ================================================================
+   HL7 ANALYZER
+   ================================================================ */
+// HL7 tab switching
+document.querySelectorAll('[data-hl7tab]').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('[data-hl7tab]').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelectorAll('#hl7-content .tool-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('hl7-tab-' + tab.dataset.hl7tab).classList.add('active');
+  });
+});
+
+document.getElementById('btn-hl7-generate').addEventListener('click', async () => {
+  const count = document.getElementById('hl7-msg-count').value || 5;
+  const container = document.getElementById('hl7-messages-list');
+  container.innerHTML = '<div style="padding:20px;text-align:center"><div class="spinner"></div></div>';
+  try {
+    const data = await api(`/api/tools/hl7/messages?count=${count}`);
+    const msgs = data.messages || [];
+    if (!msgs.length) { container.innerHTML = '<div style="padding:20px;color:var(--text-muted)">No messages generated</div>'; return; }
+    container.innerHTML = msgs.map((m, i) => {
+      const raw = m.raw_message || m.raw || JSON.stringify(m, null, 2);
+      return `<div class="hl7-message-block" onclick="loadHl7Message(this)" data-raw="${escapeHtml(raw)}" title="Click to load into Parse tab">
+        <div style="margin-bottom:4px;font-weight:600;color:var(--text-primary);font-family:var(--font-sans);font-size:0.8rem">
+          Message ${i+1}: ${escapeHtml(m.message_type || '')}^${escapeHtml(m.trigger_event || '')} | ${escapeHtml(m.patient_name || '')} | ${escapeHtml(m.status || '')}
+        </div>${escapeHtml(raw.substring(0, 500))}${raw.length > 500 ? '...' : ''}</div>`;
+    }).join('');
+  } catch (err) {
+    container.innerHTML = `<div style="padding:20px;color:var(--color-danger)">${escapeHtml(err.message)}</div>`;
+  }
+});
+
+function loadHl7Message(el) {
+  const raw = el.dataset.raw;
+  if (raw) {
+    document.getElementById('hl7-parse-input').value = raw;
+    document.getElementById('hl7-validate-input').value = raw;
+    document.querySelector('[data-hl7tab="parse"]').click();
+    showToast('Message loaded into viewer', 'info');
+  }
+}
+
+document.getElementById('btn-hl7-parse').addEventListener('click', async () => {
+  const msg = document.getElementById('hl7-parse-input').value.trim();
+  if (!msg) { showToast('Paste an HL7 message first', 'warning'); return; }
+  const result = document.getElementById('hl7-parse-result');
+  result.innerHTML = '<div class="spinner"></div>';
+  try {
+    const data = await api('/api/tools/hl7/parse', 'POST', { message: msg });
+    const segments = data.segments || [];
+    let html = '<div class="tool-result-card"><h4>Parsed Message</h4>';
+    if (data.message_type) html += `<p><strong>Type:</strong> ${escapeHtml(data.message_type)} | <strong>Event:</strong> ${escapeHtml(data.trigger_event || '')}</p>`;
+    if (data.sending_application) html += `<p><strong>Sending:</strong> ${escapeHtml(data.sending_application)} | <strong>Receiving:</strong> ${escapeHtml(data.receiving_application || '')}</p>`;
+    if (data.message_datetime) html += `<p><strong>Timestamp:</strong> ${escapeHtml(data.message_datetime)}</p>`;
+    html += '</div>';
+    if (segments.length) {
+      html += '<div class="tool-result-card"><h4>Segments</h4>';
+      html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Segment</th><th>Fields</th></tr></thead><tbody>';
+      segments.forEach(seg => {
+        const fields = seg.fields || [];
+        html += `<tr><td><code class="hl7-segment">${escapeHtml(seg.segment_id || seg.name || '')}</code></td><td style="font-family:var(--font-mono);font-size:0.78rem">${escapeHtml(fields.join(' | '))}</td></tr>`;
+      });
+      html += '</tbody></table></div></div>';
+    }
+    result.innerHTML = html;
+  } catch (err) {
+    result.innerHTML = `<div style="color:var(--color-danger)">${escapeHtml(err.message)}</div>`;
+  }
+});
+
+document.getElementById('btn-hl7-validate').addEventListener('click', async () => {
+  const msg = document.getElementById('hl7-validate-input').value.trim();
+  if (!msg) { showToast('Paste an HL7 message first', 'warning'); return; }
+  const result = document.getElementById('hl7-validate-result');
+  result.innerHTML = '<div class="spinner"></div>';
+  try {
+    const data = await api('/api/tools/hl7/validate', 'POST', { message: msg });
+    const issues = data.issues || [];
+    if (!issues.length) {
+      result.innerHTML = '<div class="tool-result-card" style="border-color:var(--color-success)"><h4 style="color:var(--color-success)">Valid Message</h4><p>No validation issues found.</p></div>';
+    } else {
+      result.innerHTML = issues.map(issue => `
+        <div class="tool-result-card">
+          <div class="severity-${(issue.severity || 'info').toLowerCase()}" style="font-weight:600;font-size:0.85rem">${escapeHtml(issue.severity || 'INFO')}: ${escapeHtml(issue.type || issue.rule || '')}</div>
+          <p>${escapeHtml(issue.message || issue.description || '')}</p>
+          ${issue.segment ? `<p style="font-size:0.78rem;color:var(--text-muted)">Segment: ${escapeHtml(issue.segment)}</p>` : ''}
+        </div>
+      `).join('');
+    }
+  } catch (err) {
+    result.innerHTML = `<div style="color:var(--color-danger)">${escapeHtml(err.message)}</div>`;
+  }
+});
+
+document.getElementById('btn-hl7-errors').addEventListener('click', async () => {
+  const result = document.getElementById('hl7-errors-result');
+  result.innerHTML = '<div style="padding:20px;text-align:center"><div class="spinner"></div></div>';
+  try {
+    const data = await api('/api/tools/hl7/errors');
+    let html = '<div class="tool-kpi-row">';
+    html += `<div class="tool-kpi"><div class="tool-kpi-value">${data.total_messages || 0}</div><div class="tool-kpi-label">Total Messages</div></div>`;
+    html += `<div class="tool-kpi"><div class="tool-kpi-value" style="color:var(--color-danger)">${data.error_count || 0}</div><div class="tool-kpi-label">Errors</div></div>`;
+    html += `<div class="tool-kpi"><div class="tool-kpi-value">${data.error_rate || '0%'}</div><div class="tool-kpi-label">Error Rate</div></div>`;
+    html += '</div>';
+    const bySys = data.by_sending_system || data.errors_by_system || [];
+    if (Array.isArray(bySys) && bySys.length) {
+      html += '<div class="tool-result-card"><h4>Errors by Sending System</h4>';
+      html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>System</th><th>Errors</th><th>Rate</th></tr></thead><tbody>';
+      bySys.forEach(s => { html += `<tr><td>${escapeHtml(s.system || s.sending_system || '')}</td><td>${s.errors || s.count || 0}</td><td>${s.rate || ''}</td></tr>`; });
+      html += '</tbody></table></div></div>';
+    }
+    const patterns = data.error_patterns || data.common_errors || [];
+    if (Array.isArray(patterns) && patterns.length) {
+      html += '<div class="tool-result-card"><h4>Common Error Patterns</h4>';
+      patterns.forEach(p => { html += `<p style="margin-bottom:4px">- ${escapeHtml(p.pattern || p.error || p.message || JSON.stringify(p))}</p>`; });
+      html += '</div>';
+    }
+    result.innerHTML = html;
+  } catch (err) {
+    result.innerHTML = `<div style="color:var(--color-danger)">${escapeHtml(err.message)}</div>`;
+  }
+});
+
+// Load HL7 reference on first visit
+let hl7RefLoaded = false;
+document.querySelector('[data-hl7tab="reference"]').addEventListener('click', async () => {
+  if (hl7RefLoaded) return;
+  try {
+    const data = await api('/api/tools/hl7/reference');
+    const el = document.getElementById('hl7-reference-content');
+    let html = '';
+    const sections = data.segments || data.message_types || data;
+    if (typeof sections === 'object') {
+      for (const [key, val] of Object.entries(sections)) {
+        html += `<div class="tool-result-card"><h4>${escapeHtml(key)}</h4>`;
+        if (Array.isArray(val)) {
+          html += '<div class="data-table-wrap"><table class="data-table"><thead><tr>';
+          if (val.length && typeof val[0] === 'object') {
+            Object.keys(val[0]).forEach(k => { html += `<th>${escapeHtml(k)}</th>`; });
+            html += '</tr></thead><tbody>';
+            val.forEach(row => { html += '<tr>' + Object.values(row).map(v => `<td>${escapeHtml(String(v))}</td>`).join('') + '</tr>'; });
+          }
+          html += '</tbody></table></div>';
+        } else if (typeof val === 'string') {
+          html += `<p>${escapeHtml(val)}</p>`;
+        } else {
+          html += `<pre>${escapeHtml(JSON.stringify(val, null, 2))}</pre>`;
+        }
+        html += '</div>';
+      }
+    }
+    el.innerHTML = html || '<pre>' + escapeHtml(JSON.stringify(data, null, 2)) + '</pre>';
+    hl7RefLoaded = true;
+  } catch (err) {
+    document.getElementById('hl7-reference-content').innerHTML = `<div style="color:var(--color-danger)">${escapeHtml(err.message)}</div>`;
+  }
+});
+
+/* ================================================================
+   CODE MAPPER
+   ================================================================ */
+document.querySelectorAll('[data-codingtab]').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('[data-codingtab]').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelectorAll('#coding-content .tool-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('coding-tab-' + tab.dataset.codingtab).classList.add('active');
+  });
+});
+
+document.getElementById('btn-coding-search').addEventListener('click', async () => {
+  const q = document.getElementById('coding-search-input').value.trim();
+  const type = document.getElementById('coding-search-type').value;
+  if (!q) { showToast('Enter a search term', 'warning'); return; }
+  const result = document.getElementById('coding-search-result');
+  result.innerHTML = '<div class="spinner"></div>';
+  try {
+    const data = await api(`/api/tools/coding/search?q=${encodeURIComponent(q)}&type=${type}`);
+    const results = data.results || [];
+    if (!results.length) { result.innerHTML = '<div style="padding:12px;color:var(--text-muted)">No results found</div>'; return; }
+    let html = `<div style="margin-bottom:8px;color:var(--text-secondary);font-size:0.8rem">${results.length} result(s) for "${escapeHtml(q)}" in ${type.toUpperCase()}</div>`;
+    html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Code</th><th>Description</th><th>Category</th></tr></thead><tbody>';
+    results.forEach(r => { html += `<tr><td><code>${escapeHtml(r.code || '')}</code></td><td>${escapeHtml(r.description || '')}</td><td>${escapeHtml(r.category || r.chapter || '')}</td></tr>`; });
+    html += '</tbody></table></div>';
+    result.innerHTML = html;
+  } catch (err) {
+    result.innerHTML = `<div style="color:var(--color-danger)">${escapeHtml(err.message)}</div>`;
+  }
+});
+
+document.getElementById('coding-search-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('btn-coding-search').click();
+});
+
+document.getElementById('btn-coding-validate').addEventListener('click', async () => {
+  const code = document.getElementById('coding-validate-input').value.trim();
+  const type = document.getElementById('coding-validate-type').value;
+  if (!code) { showToast('Enter a code to validate', 'warning'); return; }
+  const result = document.getElementById('coding-validate-result');
+  result.innerHTML = '<div class="spinner"></div>';
+  try {
+    const data = await api(`/api/tools/coding/validate?code=${encodeURIComponent(code)}&type=${type}`);
+    const valid = data.valid;
+    result.innerHTML = `
+      <div class="tool-result-card" style="border-color:${valid ? 'var(--color-success)' : 'var(--color-danger)'}">
+        <h4 style="color:${valid ? 'var(--color-success)' : 'var(--color-danger)'}">${valid ? 'Valid' : 'Invalid'} ${type.toUpperCase()} Code</h4>
+        <p><strong>Code:</strong> ${escapeHtml(data.code || code)}</p>
+        ${data.description ? `<p><strong>Description:</strong> ${escapeHtml(data.description)}</p>` : ''}
+        ${data.details ? `<p style="margin-top:8px;font-size:0.82rem;color:var(--text-secondary)">${escapeHtml(typeof data.details === 'string' ? data.details : JSON.stringify(data.details))}</p>` : ''}
+      </div>`;
+  } catch (err) {
+    result.innerHTML = `<div style="color:var(--color-danger)">${escapeHtml(err.message)}</div>`;
+  }
+});
+
+document.getElementById('btn-coding-suggest').addEventListener('click', async () => {
+  const text = document.getElementById('coding-suggest-input').value.trim();
+  if (!text) { showToast('Enter clinical text', 'warning'); return; }
+  const result = document.getElementById('coding-suggest-result');
+  result.innerHTML = '<div class="spinner"></div>';
+  try {
+    const data = await api('/api/tools/coding/suggest', 'POST', { text });
+    const suggestions = data.suggestions || [];
+    if (!suggestions.length) { result.innerHTML = '<div style="padding:12px;color:var(--text-muted)">No code suggestions found</div>'; return; }
+    let html = '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Code</th><th>Type</th><th>Description</th><th>Relevance</th><th>Reason</th></tr></thead><tbody>';
+    suggestions.forEach(s => {
+      html += `<tr><td><code>${escapeHtml(s.code || '')}</code></td><td>${escapeHtml(s.code_type || '')}</td><td>${escapeHtml(s.description || '')}</td><td>${s.relevance_score || ''}</td><td>${escapeHtml(s.reason || '')}</td></tr>`;
+    });
+    html += '</tbody></table></div>';
+    result.innerHTML = html;
+  } catch (err) {
+    result.innerHTML = `<div style="color:var(--color-danger)">${escapeHtml(err.message)}</div>`;
+  }
+});
+
+document.getElementById('btn-coding-crosswalk').addEventListener('click', async () => {
+  const code = document.getElementById('coding-snomed-input').value.trim();
+  if (!code) { showToast('Enter a SNOMED CT code', 'warning'); return; }
+  const result = document.getElementById('coding-crosswalk-result');
+  result.innerHTML = '<div class="spinner"></div>';
+  try {
+    const data = await api(`/api/tools/coding/crosswalk?snomed=${encodeURIComponent(code)}`);
+    const mappings = data.mappings || [];
+    if (!mappings.length) { result.innerHTML = '<div style="padding:12px;color:var(--text-muted)">No mappings found for this SNOMED code</div>'; return; }
+    let html = '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>SNOMED Code</th><th>SNOMED Description</th><th>ICD-10 Code</th><th>ICD-10 Description</th><th>Map Type</th></tr></thead><tbody>';
+    mappings.forEach(m => {
+      html += `<tr><td><code>${escapeHtml(m.snomed_code || '')}</code></td><td>${escapeHtml(m.snomed_description || '')}</td><td><code>${escapeHtml(m.icd10_code || '')}</code></td><td>${escapeHtml(m.icd10_description || '')}</td><td>${escapeHtml(m.map_type || '')}</td></tr>`;
+    });
+    html += '</tbody></table></div>';
+    result.innerHTML = html;
+  } catch (err) {
+    result.innerHTML = `<div style="color:var(--color-danger)">${escapeHtml(err.message)}</div>`;
+  }
+});
+
+document.getElementById('btn-coding-drg').addEventListener('click', async () => {
+  const code = document.getElementById('coding-drg-input').value.trim();
+  if (!code) { showToast('Enter a DRG code', 'warning'); return; }
+  const result = document.getElementById('coding-drg-result');
+  result.innerHTML = '<div class="spinner"></div>';
+  try {
+    const data = await api(`/api/tools/coding/drg/${encodeURIComponent(code)}`);
+    result.innerHTML = `
+      <div class="tool-result-card">
+        <h4>MS-DRG ${escapeHtml(data.drg_code || code)}</h4>
+        <p><strong>Description:</strong> ${escapeHtml(data.description || 'Unknown')}</p>
+        ${data.mdc ? `<p><strong>MDC:</strong> ${escapeHtml(data.mdc)}</p>` : ''}
+        ${data.weight ? `<p><strong>Weight:</strong> ${data.weight}</p>` : ''}
+        ${data.geometric_mean_los ? `<p><strong>Geometric Mean LOS:</strong> ${data.geometric_mean_los} days</p>` : ''}
+        ${data.arithmetic_mean_los ? `<p><strong>Arithmetic Mean LOS:</strong> ${data.arithmetic_mean_los} days</p>` : ''}
+        ${data.related_codes ? `<p style="margin-top:8px"><strong>Related ICD-10 Codes:</strong> ${escapeHtml(Array.isArray(data.related_codes) ? data.related_codes.join(', ') : String(data.related_codes))}</p>` : ''}
+      </div>`;
+  } catch (err) {
+    result.innerHTML = `<div style="color:var(--color-danger)">${escapeHtml(err.message)}</div>`;
+  }
+});
+
+/* ================================================================
+   REPORT BUILDER
+   ================================================================ */
+let reportTemplates = [];
+let selectedReportTemplate = null;
+
+async function loadReportTemplates() {
+  try {
+    const data = await api('/api/tools/reports/templates');
+    reportTemplates = data.templates || [];
+    renderReportTemplateList();
+  } catch (err) {
+    document.getElementById('report-template-list').innerHTML = `<div style="color:var(--color-danger);font-size:0.8rem">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function renderReportTemplateList() {
+  const container = document.getElementById('report-template-list');
+  container.innerHTML = reportTemplates.map(t => `
+    <div class="report-template-item ${selectedReportTemplate && selectedReportTemplate.id === t.id ? 'active' : ''}"
+         onclick="selectReportTemplate('${escapeHtml(t.id)}')">${escapeHtml(t.name || t.id)}</div>
+  `).join('');
+}
+
+function selectReportTemplate(id) {
+  selectedReportTemplate = reportTemplates.find(t => t.id === id);
+  if (!selectedReportTemplate) return;
+  renderReportTemplateList();
+
+  const config = document.getElementById('report-config');
+  config.style.display = 'block';
+  document.getElementById('report-selected-name').textContent = selectedReportTemplate.name || selectedReportTemplate.id;
+  document.getElementById('report-selected-desc').textContent = selectedReportTemplate.description || '';
+
+  const paramsEl = document.getElementById('report-params');
+  const params = selectedReportTemplate.parameters || [];
+  if (params.length) {
+    paramsEl.innerHTML = params.map(p => {
+      if (p.options && p.options.length) {
+        return `<div style="margin-bottom:8px"><label style="font-size:0.82rem;color:var(--text-secondary)">${escapeHtml(p.name)}${p.required ? ' *' : ''}</label>
+          <select id="report-param-${escapeHtml(p.name)}" style="display:block;margin-top:4px;padding:6px;width:100%;background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm)">
+            ${p.options.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('')}
+          </select></div>`;
+      }
+      return `<div style="margin-bottom:8px"><label style="font-size:0.82rem;color:var(--text-secondary)">${escapeHtml(p.name)}${p.required ? ' *' : ''}: ${escapeHtml(p.description || '')}</label>
+        <input type="${p.type === 'number' ? 'number' : p.type === 'date' ? 'date' : 'text'}" id="report-param-${escapeHtml(p.name)}" placeholder="${escapeHtml(p.description || p.name)}"
+         style="display:block;margin-top:4px;padding:6px;width:100%;background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:var(--radius-sm)"></div>`;
+    }).join('');
+  } else {
+    paramsEl.innerHTML = '<div style="color:var(--text-muted);font-size:0.82rem">No parameters needed</div>';
+  }
+
+  document.getElementById('report-output').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">Configure parameters and click "Generate Report"</div>';
+}
+
+document.getElementById('btn-report-generate').addEventListener('click', async () => {
+  if (!selectedReportTemplate) { showToast('Select a template first', 'warning'); return; }
+  const params = {};
+  (selectedReportTemplate.parameters || []).forEach(p => {
+    const el = document.getElementById('report-param-' + p.name);
+    if (el && el.value) params[p.name] = el.value;
+  });
+
+  const output = document.getElementById('report-output');
+  output.innerHTML = '<div style="padding:20px;text-align:center"><div class="spinner spinner-lg"></div><p style="margin-top:12px;color:var(--text-muted)">Generating report...</p></div>';
+
+  try {
+    const data = await api('/api/tools/reports/generate', 'POST', { template: selectedReportTemplate.id, params });
+    let html = '';
+    if (data.title) html += `<div class="report-section"><h4>${escapeHtml(data.title)}</h4><p style="font-size:0.78rem;color:var(--text-muted)">Generated: ${escapeHtml(data.generated_at || new Date().toISOString())}</p></div>`;
+
+    const sections = data.sections || [];
+    sections.forEach(section => {
+      html += '<div class="report-section">';
+      if (section.heading) html += `<h4>${escapeHtml(section.heading)}</h4>`;
+      if (section.content) html += `<p style="margin-bottom:8px;color:var(--text-secondary);font-size:0.85rem">${escapeHtml(section.content)}</p>`;
+      if (section.data) {
+        if (Array.isArray(section.data) && section.data.length) {
+          const keys = Object.keys(section.data[0]);
+          html += '<div class="data-table-wrap"><table class="data-table"><thead><tr>';
+          keys.forEach(k => { html += `<th>${escapeHtml(k)}</th>`; });
+          html += '</tr></thead><tbody>';
+          section.data.forEach(row => { html += '<tr>' + keys.map(k => `<td>${escapeHtml(String(row[k] != null ? row[k] : ''))}</td>`).join('') + '</tr>'; });
+          html += '</tbody></table></div>';
+        } else if (typeof section.data === 'object') {
+          html += '<pre>' + escapeHtml(JSON.stringify(section.data, null, 2)) + '</pre>';
+        }
+      }
+      html += '</div>';
+    });
+
+    if (data.summary) html += `<div class="report-section"><h4>Summary</h4><p style="white-space:pre-wrap;font-size:0.85rem;color:var(--text-secondary)">${escapeHtml(typeof data.summary === 'string' ? data.summary : JSON.stringify(data.summary, null, 2))}</p></div>`;
+    output.innerHTML = html || '<pre>' + escapeHtml(JSON.stringify(data, null, 2)) + '</pre>';
+  } catch (err) {
+    output.innerHTML = `<div style="padding:20px;color:var(--color-danger)">${escapeHtml(err.message)}</div>`;
+  }
+});
+
+/* ================================================================
+   AUDIT WORKBENCH
+   ================================================================ */
+document.querySelectorAll('[data-audittab]').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('[data-audittab]').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelectorAll('#audit-content .tool-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('audit-tab-' + tab.dataset.audittab).classList.add('active');
+  });
+});
+
+document.getElementById('btn-audit-analyze').addEventListener('click', async () => {
+  const userId = document.getElementById('audit-user-id').value.trim();
+  const result = document.getElementById('audit-analyze-result');
+  result.innerHTML = '<div style="padding:20px;text-align:center"><div class="spinner"></div></div>';
+  try {
+    const url = userId ? `/api/tools/audit/analyze?user_id=${encodeURIComponent(userId)}` : '/api/tools/audit/analyze';
+    const data = await api(url);
+    let html = '';
+    const users = data.users || [];
+    if (users.length) {
+      html += '<div class="tool-result-card"><h4>User Access Summary</h4>';
+      html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>User</th><th>Role</th><th>Total Actions</th><th>Last Active</th><th>Risk</th></tr></thead><tbody>';
+      users.forEach(u => {
+        const risk = u.risk_level || u.risk || 'low';
+        html += `<tr><td>${escapeHtml(u.full_name || u.username || '')}</td><td>${escapeHtml(u.role || '')}</td><td>${u.total_actions || u.action_count || 0}</td><td>${escapeHtml(u.last_action || u.last_active || '')}</td><td class="severity-${risk}">${escapeHtml(risk)}</td></tr>`;
+      });
+      html += '</tbody></table></div></div>';
+    }
+    const flags = data.risk_flags || data.patterns || [];
+    if (Array.isArray(flags) && flags.length) {
+      html += '<div class="tool-result-card"><h4>Risk Flags</h4>';
+      flags.forEach(f => { html += `<p class="severity-${(f.severity || 'info').toLowerCase()}" style="margin-bottom:4px">- ${escapeHtml(f.description || f.message || JSON.stringify(f))}</p>`; });
+      html += '</div>';
+    }
+    result.innerHTML = html || '<pre>' + escapeHtml(JSON.stringify(data, null, 2)) + '</pre>';
+  } catch (err) {
+    result.innerHTML = `<div style="color:var(--color-danger)">${escapeHtml(err.message)}</div>`;
+  }
+});
+
+document.getElementById('btn-audit-anomalies').addEventListener('click', async () => {
+  const result = document.getElementById('audit-anomalies-result');
+  result.innerHTML = '<div style="padding:20px;text-align:center"><div class="spinner"></div></div>';
+  try {
+    const data = await api('/api/tools/audit/anomalies');
+    const anomalies = data.anomalies || [];
+    if (!anomalies.length) {
+      result.innerHTML = '<div class="tool-result-card" style="border-color:var(--color-success)"><h4 style="color:var(--color-success)">No Anomalies Detected</h4><p>All access patterns appear normal.</p></div>';
+      return;
+    }
+    let html = `<div style="margin-bottom:12px;color:var(--text-secondary);font-size:0.85rem">${anomalies.length} anomal${anomalies.length === 1 ? 'y' : 'ies'} detected</div>`;
+    anomalies.forEach(a => {
+      const sev = (a.severity || 'info').toLowerCase();
+      html += `<div class="tool-result-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span class="severity-${sev}" style="font-size:0.85rem">${escapeHtml(a.type || 'Anomaly')}</span>
+          <span class="badge badge-priority-${sev === 'critical' ? 'urgent' : sev === 'high' ? 'high' : 'medium'}">${escapeHtml(a.severity || '')}</span>
+        </div>
+        ${a.user ? `<p style="font-weight:500">${escapeHtml(typeof a.user === 'string' ? a.user : a.user.full_name || a.user.username || '')}</p>` : ''}
+        <p style="font-size:0.82rem;color:var(--text-secondary)">${escapeHtml(a.description || '')}</p>
+        ${a.timestamp ? `<p style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">${escapeHtml(a.timestamp)}</p>` : ''}
+      </div>`;
+    });
+    result.innerHTML = html;
+  } catch (err) {
+    result.innerHTML = `<div style="color:var(--color-danger)">${escapeHtml(err.message)}</div>`;
+  }
+});
+
+document.getElementById('btn-audit-timeline').addEventListener('click', async () => {
+  const resourceType = document.getElementById('audit-resource-type').value;
+  const resourceId = document.getElementById('audit-resource-id').value.trim();
+  if (!resourceId) { showToast('Enter a resource ID', 'warning'); return; }
+  const result = document.getElementById('audit-timeline-result');
+  result.innerHTML = '<div style="padding:20px;text-align:center"><div class="spinner"></div></div>';
+  try {
+    const data = await api(`/api/tools/audit/timeline?resource_type=${encodeURIComponent(resourceType)}&resource_id=${encodeURIComponent(resourceId)}`);
+    const events = data.events || [];
+    let html = `<div class="tool-result-card"><h4>Access Timeline: ${escapeHtml(resourceType)} #${escapeHtml(resourceId)}</h4>`;
+    if (data.summary) html += `<p style="font-size:0.82rem;color:var(--text-secondary)">${escapeHtml(typeof data.summary === 'string' ? data.summary : JSON.stringify(data.summary))}</p>`;
+    html += '</div>';
+    if (events.length) {
+      html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>IP Address</th><th>Details</th></tr></thead><tbody>';
+      events.forEach(e => {
+        html += `<tr><td>${escapeHtml(e.timestamp || '')}</td><td>${escapeHtml(e.user || e.full_name || '')}</td><td>${escapeHtml(e.action || '')}</td><td>${escapeHtml(e.ip_address || '')}</td><td style="font-size:0.78rem">${escapeHtml(e.details || '')}</td></tr>`;
+      });
+      html += '</tbody></table></div>';
+    } else {
+      html += '<div style="padding:12px;color:var(--text-muted)">No access events found for this resource</div>';
+    }
+    result.innerHTML = html;
+  } catch (err) {
+    result.innerHTML = `<div style="color:var(--color-danger)">${escapeHtml(err.message)}</div>`;
+  }
+});
+
+document.getElementById('btn-audit-report').addEventListener('click', async () => {
+  const start = document.getElementById('audit-start-date').value;
+  const end = document.getElementById('audit-end-date').value;
+  const result = document.getElementById('audit-report-result');
+  result.innerHTML = '<div style="padding:20px;text-align:center"><div class="spinner spinner-lg"></div><p style="margin-top:12px;color:var(--text-muted)">Generating audit report...</p></div>';
+  try {
+    const data = await api('/api/tools/audit/report', 'POST', { start_date: start || '', end_date: end || '' });
+    let html = '';
+    if (data.report_period) html += `<div class="tool-result-card"><h4>Audit Report</h4><p>Period: ${escapeHtml(data.report_period)}</p></div>`;
+
+    const stats = data.summary_stats || {};
+    if (Object.keys(stats).length) {
+      html += '<div class="tool-kpi-row">';
+      for (const [key, val] of Object.entries(stats)) {
+        html += `<div class="tool-kpi"><div class="tool-kpi-value">${escapeHtml(String(val))}</div><div class="tool-kpi-label">${escapeHtml(key.replace(/_/g, ' '))}</div></div>`;
+      }
+      html += '</div>';
+    }
+
+    const activity = data.user_activity || [];
+    if (Array.isArray(activity) && activity.length) {
+      html += '<div class="tool-result-card"><h4>User Activity</h4>';
+      html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>User</th><th>Role</th><th>Actions</th></tr></thead><tbody>';
+      activity.forEach(u => { html += `<tr><td>${escapeHtml(u.full_name || u.user || '')}</td><td>${escapeHtml(u.role || '')}</td><td>${u.actions || u.count || 0}</td></tr>`; });
+      html += '</tbody></table></div></div>';
+    }
+
+    const anomalies = data.anomalies || [];
+    if (Array.isArray(anomalies) && anomalies.length) {
+      html += '<div class="tool-result-card"><h4>Anomalies Found</h4>';
+      anomalies.forEach(a => { html += `<p class="severity-${(a.severity || 'info').toLowerCase()}" style="margin-bottom:4px">- ${escapeHtml(a.description || a.type || JSON.stringify(a))}</p>`; });
+      html += '</div>';
+    }
+
+    if (data.compliance_score != null) {
+      const score = data.compliance_score;
+      const color = score >= 80 ? 'var(--color-success)' : score >= 60 ? 'var(--color-warning)' : 'var(--color-danger)';
+      html += `<div class="tool-result-card"><h4>Compliance Score</h4><div style="font-size:2rem;font-weight:700;color:${color}">${score}%</div></div>`;
+    }
+
+    const recs = data.recommendations || [];
+    if (Array.isArray(recs) && recs.length) {
+      html += '<div class="tool-result-card"><h4>Recommendations</h4>';
+      recs.forEach(r => { html += `<p style="margin-bottom:4px">- ${escapeHtml(typeof r === 'string' ? r : r.description || JSON.stringify(r))}</p>`; });
+      html += '</div>';
+    }
+    result.innerHTML = html || '<pre>' + escapeHtml(JSON.stringify(data, null, 2)) + '</pre>';
+  } catch (err) {
+    result.innerHTML = `<div style="color:var(--color-danger)">${escapeHtml(err.message)}</div>`;
+  }
+});
+
+document.getElementById('btn-audit-matrix').addEventListener('click', async () => {
+  const result = document.getElementById('audit-matrix-result');
+  result.innerHTML = '<div style="padding:20px;text-align:center"><div class="spinner"></div></div>';
+  try {
+    const data = await api('/api/tools/audit/role-matrix');
+    let html = '';
+    const roles = data.roles || [];
+    const resources = data.resources || [];
+    const matrix = data.matrix || {};
+
+    if (roles.length && resources.length) {
+      html += '<div class="tool-result-card"><h4>Role-Based Access Matrix</h4>';
+      html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Role</th>';
+      resources.forEach(r => { html += `<th>${escapeHtml(r)}</th>`; });
+      html += '</tr></thead><tbody>';
+      roles.forEach(role => {
+        html += `<tr><td><strong>${escapeHtml(role)}</strong></td>`;
+        resources.forEach(res => {
+          const count = (matrix[role] && matrix[role][res]) || 0;
+          html += `<td style="text-align:center;${count > 0 ? 'color:var(--text-primary)' : 'color:var(--text-muted)'}">${count}</td>`;
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table></div></div>';
+    }
+
+    const recs = data.recommendations || [];
+    if (Array.isArray(recs) && recs.length) {
+      html += '<div class="tool-result-card"><h4>Recommendations</h4>';
+      recs.forEach(r => { html += `<p style="margin-bottom:4px">- ${escapeHtml(typeof r === 'string' ? r : r.description || JSON.stringify(r))}</p>`; });
+      html += '</div>';
+    }
+    result.innerHTML = html || '<pre>' + escapeHtml(JSON.stringify(data, null, 2)) + '</pre>';
+  } catch (err) {
+    result.innerHTML = `<div style="color:var(--color-danger)">${escapeHtml(err.message)}</div>`;
+  }
+});
+
+/* ================================================================
+   INITIALIZE TOOL PANELS ON WORKSPACE START
+   ================================================================ */
+const origStartWorkspace = startWorkspace;
+startWorkspace = function(config) {
+  origStartWorkspace(config);
+  loadReportTemplates();
+};
 
 // Hide workspace initially
 document.getElementById('workspace').style.display = 'none';

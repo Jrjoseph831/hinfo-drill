@@ -437,10 +437,24 @@ def _generate_emails(scenario, tasks, conn):
 def _instantiate_tasks(scenario, conn):
     task_count = scenario.get("task_count", 5)
     time_target = scenario.get("task_time_target_minutes", 120)
+    difficulty = scenario.get("difficulty", "intermediate")
+    role = scenario.get("role", "clinical_informatics_analyst")
 
     random.seed()
-    templates = list(TASK_TEMPLATES)
-    random.shuffle(templates)
+
+    # Pull from the 300-scenario library first, fall back to built-in templates
+    try:
+        from scenarios import select_scenarios_for_session
+        templates = select_scenarios_for_session(role, difficulty, task_count,
+                                                 time_target)
+    except Exception:
+        templates = []
+
+    # Fall back to built-in TASK_TEMPLATES if the scenario library is unavailable
+    if not templates:
+        templates = list(TASK_TEMPLATES)
+        random.shuffle(templates)
+
     selected = templates[:min(task_count, len(templates))]
 
     depts = [r["dept_name"] for r in conn.execute("SELECT dept_name FROM departments").fetchall()]
@@ -907,6 +921,257 @@ def get_hl7():
         msgs = conn.execute("SELECT * FROM hl7_messages ORDER BY message_datetime DESC LIMIT 50").fetchall()
     conn.close()
     return jsonify({"messages": [dict(r) for r in msgs]})
+
+
+# ---------------------------------------------------------------------------
+# Scenario Library API
+# ---------------------------------------------------------------------------
+
+@app.route("/api/scenarios/stats")
+def scenario_stats():
+    try:
+        from scenarios import get_scenario_stats
+        return jsonify(get_scenario_stats())
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/scenarios/categories")
+def scenario_categories():
+    try:
+        from scenarios import get_scenario_categories
+        return jsonify({"categories": get_scenario_categories()})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+# ---------------------------------------------------------------------------
+# HL7 Message Analyzer API
+# ---------------------------------------------------------------------------
+
+@app.route("/api/tools/hl7/messages")
+def hl7_sample_messages():
+    try:
+        from tools_hl7 import generate_sample_messages
+        count = int(request.args.get("count", 10))
+        msgs = generate_sample_messages(DB_PATH, count=min(count, 50))
+        return jsonify({"messages": msgs})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/tools/hl7/parse", methods=["POST"])
+def hl7_parse():
+    try:
+        from tools_hl7 import parse_hl7_message
+        data = request.get_json(force=True)
+        result = parse_hl7_message(data.get("message", ""))
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.route("/api/tools/hl7/validate", methods=["POST"])
+def hl7_validate():
+    try:
+        from tools_hl7 import validate_hl7_message
+        data = request.get_json(force=True)
+        result = validate_hl7_message(data.get("message", ""))
+        return jsonify({"issues": result})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.route("/api/tools/hl7/errors")
+def hl7_errors():
+    try:
+        from tools_hl7 import analyze_interface_errors
+        result = analyze_interface_errors(DB_PATH)
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/tools/hl7/reference")
+def hl7_reference():
+    try:
+        from tools_hl7 import get_hl7_field_reference
+        return jsonify(get_hl7_field_reference())
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+# ---------------------------------------------------------------------------
+# Code Mapper API
+# ---------------------------------------------------------------------------
+
+@app.route("/api/tools/coding/search")
+def coding_search():
+    try:
+        query = request.args.get("q", "")
+        code_type = request.args.get("type", "icd10")
+        limit = int(request.args.get("limit", 20))
+        if code_type == "cpt":
+            from tools_coding import search_cpt
+            results = search_cpt(query, limit=min(limit, 50))
+        else:
+            from tools_coding import search_icd10
+            results = search_icd10(query, limit=min(limit, 50))
+        return jsonify({"results": results, "code_type": code_type})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/tools/coding/validate")
+def coding_validate():
+    try:
+        from tools_coding import validate_code
+        code = request.args.get("code", "")
+        code_type = request.args.get("type", "icd10")
+        result = validate_code(code, code_type)
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/tools/coding/drg/<drg_code>")
+def coding_drg(drg_code):
+    try:
+        from tools_coding import get_drg_info
+        result = get_drg_info(drg_code)
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/tools/coding/suggest", methods=["POST"])
+def coding_suggest():
+    try:
+        from tools_coding import suggest_codes
+        data = request.get_json(force=True)
+        results = suggest_codes(data.get("text", ""))
+        return jsonify({"suggestions": results})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/tools/coding/crosswalk")
+def coding_crosswalk():
+    try:
+        from tools_coding import crosswalk_snomed_to_icd10
+        snomed = request.args.get("snomed", "")
+        results = crosswalk_snomed_to_icd10(snomed)
+        return jsonify({"mappings": results})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/tools/coding/audit/<int:encounter_id>")
+def coding_audit(encounter_id):
+    try:
+        from tools_coding import check_coding_accuracy
+        result = check_coding_accuracy(DB_PATH, encounter_id)
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+# ---------------------------------------------------------------------------
+# Report Builder API
+# ---------------------------------------------------------------------------
+
+@app.route("/api/tools/reports/templates")
+def report_templates():
+    try:
+        from tools_report import get_report_templates
+        return jsonify({"templates": get_report_templates()})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/tools/reports/generate", methods=["POST"])
+def report_generate():
+    try:
+        from tools_report import generate_report
+        data = request.get_json(force=True)
+        template = data.get("template", "")
+        params = data.get("params", {})
+        result = generate_report(DB_PATH, template, params)
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/tools/reports/format", methods=["POST"])
+def report_format():
+    try:
+        from tools_report import format_report_text
+        data = request.get_json(force=True)
+        text = format_report_text(data)
+        return jsonify({"formatted_text": text})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+# ---------------------------------------------------------------------------
+# Audit Workbench API
+# ---------------------------------------------------------------------------
+
+@app.route("/api/tools/audit/analyze")
+def audit_analyze():
+    try:
+        from tools_audit import analyze_user_access
+        user_id = request.args.get("user_id")
+        user_id = int(user_id) if user_id else None
+        result = analyze_user_access(DB_PATH, user_id=user_id)
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/tools/audit/anomalies")
+def audit_anomalies():
+    try:
+        from tools_audit import detect_anomalies
+        result = detect_anomalies(DB_PATH)
+        return jsonify({"anomalies": result})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/tools/audit/timeline")
+def audit_timeline():
+    try:
+        from tools_audit import generate_access_timeline
+        resource_type = request.args.get("resource_type", "patient_chart")
+        resource_id = request.args.get("resource_id", "")
+        result = generate_access_timeline(DB_PATH, resource_type, resource_id)
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/tools/audit/report", methods=["POST"])
+def audit_report():
+    try:
+        from tools_audit import build_audit_report
+        data = request.get_json(force=True)
+        start = data.get("start_date", "")
+        end = data.get("end_date", "")
+        result = build_audit_report(DB_PATH, start, end)
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/tools/audit/role-matrix")
+def audit_role_matrix():
+    try:
+        from tools_audit import role_access_matrix
+        result = role_access_matrix(DB_PATH)
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 # ---------------------------------------------------------------------------
