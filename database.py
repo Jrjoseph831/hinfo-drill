@@ -1315,8 +1315,21 @@ def get_db(db_path=DEFAULT_DB_PATH):
     return conn
 
 
-def init_db(db_path=DEFAULT_DB_PATH):
-    """Create all tables and seed with realistic fake data.
+def init_db(db_path=DEFAULT_DB_PATH, data_source="faker", synthea_dir=None):
+    """Create all tables and seed with data.
+
+    Parameters
+    ----------
+    db_path : str
+        Path to the SQLite database file.
+    data_source : str
+        ``"faker"``  – original Faker-based random data (default).
+        ``"synthea"`` – clinically coherent Synthea-style data with
+                        archetype-driven patient histories.
+        ``"synthea_csv"`` – import from an external Synthea CSV directory.
+    synthea_dir : str or None
+        Path to a Synthea CSV output directory (only used when
+        *data_source* is ``"synthea_csv"``).
 
     If the database file already exists, it is removed first so that
     every call yields a clean, reproducible dataset.
@@ -1339,6 +1352,20 @@ def init_db(db_path=DEFAULT_DB_PATH):
     # Create schema
     cur.executescript(SCHEMA_SQL)
 
+    if data_source == "synthea":
+        conn.commit()
+        conn.close()
+        from synthea_integration import generate_synthea_sample
+        generate_synthea_sample(db_path, num_patients=50)
+        return
+    elif data_source == "synthea_csv" and synthea_dir:
+        conn.commit()
+        conn.close()
+        from synthea_integration import load_synthea_csv
+        load_synthea_csv(db_path, synthea_dir)
+        return
+
+    # Default: original Faker-based seeding
     now = datetime(2026, 2, 25, 12, 0, 0)
 
     # Seed in dependency order

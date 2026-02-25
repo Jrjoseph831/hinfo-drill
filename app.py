@@ -498,6 +498,10 @@ def index():
 @app.route("/api/scenario/start", methods=["POST"])
 def start_scenario():
     data = request.get_json(force=True)
+    data_source = data.get("data_source", "faker")
+    if data_source not in ("faker", "synthea", "synthea_csv"):
+        data_source = "faker"
+
     scenario = {
         "facility_type": data.get("facility_type", "Community Hospital"),
         "role": data.get("role", "Clinical Informatics Analyst"),
@@ -507,10 +511,11 @@ def start_scenario():
         "assistance_level": data.get("assistance_level", "hints"),
         "python_enabled": bool(data.get("python_enabled", False)),
         "task_time_target_minutes": int(data.get("task_time_target_minutes", 120)),
+        "data_source": data_source,
         "started_at": _fmt_dt(_now()),
     }
 
-    init_db(DB_PATH)
+    init_db(DB_PATH, data_source=data_source)
 
     conn = _db()
     tasks = _instantiate_tasks(scenario, conn)

@@ -1962,6 +1962,32 @@ input,select,textarea{font-family:inherit;font-size:inherit}
           </div>
         </div>
 
+        <!-- Data Source -->
+        <div class="form-section">
+          <div class="form-section-title">Data Source</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Patient Data Engine</label>
+              <div class="radio-group" id="datasource-group">
+                <label class="radio-option selected">
+                  <input type="radio" name="data_source" value="faker" checked>
+                  <div>
+                    <div class="radio-label">Standard (Faker)</div>
+                    <div class="radio-desc">Random patient data — fast, good for general practice</div>
+                  </div>
+                </label>
+                <label class="radio-option">
+                  <input type="radio" name="data_source" value="synthea">
+                  <div>
+                    <div class="radio-label">Synthea (Realistic)</div>
+                    <div class="radio-desc">Clinically coherent histories — diabetics have metformin, cardiac patients have troponin, etc.</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Tools -->
         <div class="form-section">
           <div class="form-section-title">Tools</div>
@@ -2420,7 +2446,8 @@ setupForm.addEventListener('submit', async (e) => {
     shift_duration: parseInt(document.getElementById('shift-duration').value),
     difficulty: document.querySelector('input[name="difficulty"]:checked').value,
     assistance_level: document.querySelector('input[name="assistance"]:checked').value,
-    python_enabled: document.getElementById('python-enabled').checked
+    python_enabled: document.getElementById('python-enabled').checked,
+    data_source: document.querySelector('input[name="data_source"]:checked').value
   };
 
   const btn = document.getElementById('btn-start');
