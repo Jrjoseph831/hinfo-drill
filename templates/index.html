@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Health Informatics Drill</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0D1117;--bg2:#161B22;--bg3:#21262D;--bg4:#30363D;
+  --text:#E6EDF3;--text2:#8B949E;--text3:#6E7681;
+  --blue:#58A6FF;--teal:#2EC4B6;--red:#F85149;--yellow:#D29922;--green:#3FB950;--purple:#BC8CFF;
+  --border:#30363D;--hover:#1C2128;
+}
+body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;overflow:hidden;height:100vh}
+.mono{font-family:'SF Mono','Cascadia Code','Fira Code',Consolas,monospace}
+button{cursor:pointer;font-family:inherit;border:none;border-radius:6px;padding:8px 16px;font-size:14px;transition:all .15s}
+input,select,textarea{font-family:inherit;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:14px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--blue)}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+
+/* SETUP SCREEN */
+#setup{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+#setup.hidden{display:none}
+.setup-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:40px;max-width:720px;width:100%}
+.setup-header{text-align:center;margin-bottom:32px}
+.setup-header h1{font-size:28px;font-weight:700;color:var(--teal)}
+.setup-header h1 span{color:var(--text2);font-size:14px;display:block;margin-top:4px;font-weight:400}
+.form-section{margin-bottom:24px}
+.form-section h3{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:12px;color:var(--text2);font-weight:500}
+.form-group select,.form-group input{width:100%}
+.radio-group{display:flex;gap:8px;flex-wrap:wrap}
+.radio-opt{background:var(--bg3);border:2px solid var(--border);border-radius:8px;padding:10px 14px;cursor:pointer;transition:all .15s;flex:1;min-width:140px;text-align:center}
+.radio-opt:hover{border-color:var(--text3)}
+.radio-opt.active{border-color:var(--teal);background:rgba(46,196,182,.1)}
+.radio-opt .ro-label{font-size:14px;font-weight:600;color:var(--text)}
+.radio-opt .ro-desc{font-size:11px;color:var(--text2);margin-top:2px}
+.toggle-row{display:flex;align-items:center;gap:12px}
+.toggle{position:relative;width:44px;height:24px;background:var(--bg4);border-radius:12px;cursor:pointer;transition:background .2s}
+.toggle.on{background:var(--teal)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;background:white;border-radius:50%;transition:transform .2s}
+.toggle.on::after{transform:translateX(20px)}
+.slider-row{display:flex;align-items:center;gap:12px}
+.slider-row input[type=range]{flex:1;accent-color:var(--teal)}
+.slider-val{background:var(--bg3);border-radius:6px;padding:4px 12px;font-weight:700;color:var(--teal);min-width:36px;text-align:center}
+.btn-start{width:100%;padding:14px;font-size:18px;font-weight:700;background:var(--teal);color:var(--bg);border-radius:8px;margin-top:8px}
+.btn-start:hover{filter:brightness(1.1)}
+
+/* WORKSPACE */
+#workspace{display:none;height:100vh;flex-direction:column}
+#workspace.active{display:flex}
+
+/* TOP BAR */
+.topbar{height:48px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:16px;flex-shrink:0}
+.topbar-brand{font-weight:700;color:var(--teal);font-size:15px;white-space:nowrap}
+.topbar-clock{display:flex;align-items:center;gap:8px;margin-left:auto}
+.shift-bar{width:200px;height:6px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.shift-bar-fill{height:100%;background:var(--teal);border-radius:3px;transition:width 1s}
+.topbar-tasks{font-size:13px;color:var(--text2)}
+.topbar-tasks b{color:var(--green)}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;background:var(--red);color:white;font-size:11px;font-weight:700;border-radius:9px;padding:0 5px}
+.btn-reset{background:var(--bg3);color:var(--red);font-size:12px;padding:6px 12px;border:1px solid var(--border)}
+.btn-reset:hover{background:var(--red);color:white}
+.role-badge{background:var(--bg3);color:var(--purple);font-size:11px;padding:3px 8px;border-radius:4px}
+
+/* MAIN LAYOUT */
+.main{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:56px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:4px;flex-shrink:0}
+.nav-btn{width:42px;height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:transparent;color:var(--text2);border-radius:8px;font-size:18px;position:relative;transition:all .15s}
+.nav-btn:hover{background:var(--bg3);color:var(--text)}
+.nav-btn.active{background:var(--bg3);color:var(--blue)}
+.nav-btn .nav-label{font-size:8px;margin-top:1px}
+.nav-btn .nav-badge{position:absolute;top:2px;right:2px;min-width:14px;height:14px;font-size:9px;background:var(--red);color:white;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+
+/* CONTENT AREA */
+.content{flex:1;display:flex;overflow:hidden}
+.panel{display:none;flex:1;overflow:auto;padding:20px;flex-direction:column;gap:16px}
+.panel.active{display:flex}
+.panel-title{font-size:20px;font-weight:700;margin-bottom:4px}
+.panel-subtitle{font-size:13px;color:var(--text2)}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.kpi{text-align:center;padding:20px 12px}
+.kpi-val{font-size:28px;font-weight:800;color:var(--teal)}
+.kpi-label{font-size:12px;color:var(--text2);margin-top:4px}
+
+/* EMAIL */
+.email-layout{display:flex;gap:0;flex:1;min-height:0;overflow:hidden}
+.email-list{width:340px;border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0}
+.email-item{padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+.email-item:hover{background:var(--hover)}
+.email-item.active{background:var(--bg3)}
+.email-item.unread .email-subject{font-weight:700}
+.email-from{font-size:13px;color:var(--text);display:flex;justify-content:space-between}
+.email-subject{font-size:13px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.email-time{font-size:11px;color:var(--text3)}
+.email-detail{flex:1;padding:20px;overflow-y:auto}
+.email-detail-header{margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.email-detail-header h2{font-size:18px;margin-bottom:8px}
+.email-meta{font-size:12px;color:var(--text2)}
+.email-body{white-space:pre-wrap;font-size:14px;line-height:1.7}
+.email-reply{margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+.email-reply textarea{width:100%;height:100px;resize:vertical;margin-bottom:8px}
+.priority-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.priority-dot.high{background:var(--red)}.priority-dot.normal{background:var(--blue)}.priority-dot.low{background:var(--text3)}
+.email-filters{display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid var(--border)}
+.email-filter-btn{background:transparent;color:var(--text2);font-size:12px;padding:4px 10px;border-radius:4px}
+.email-filter-btn.active{background:var(--bg3);color:var(--text)}
+
+/* TASKS */
+.task-item{border:1px solid var(--border);border-radius:8px;padding:14px 16px;cursor:pointer;transition:all .15s;background:var(--bg2)}
+.task-item:hover{border-color:var(--text3)}
+.task-item.expanded{background:var(--bg3)}
+.task-header{display:flex;align-items:center;gap:10px}
+.task-status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.task-status-dot.pending{background:var(--text3)}.task-status-dot.in_progress{background:var(--blue)}.task-status-dot.completed{background:var(--green)}
+.task-title{font-size:14px;font-weight:600;flex:1}
+.task-badges{display:flex;gap:6px;flex-wrap:wrap}
+.tbadge{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600}
+.tbadge.cat{background:rgba(88,166,255,.15);color:var(--blue)}
+.tbadge.time{background:rgba(210,153,34,.15);color:var(--yellow)}
+.tbadge.prio-high{background:rgba(248,81,73,.15);color:var(--red)}
+.tbadge.tool{background:rgba(46,196,182,.15);color:var(--teal)}
+.task-detail{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:none}
+.task-item.expanded .task-detail{display:block}
+.task-desc{font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.6}
+.step-list{list-style:none;margin-bottom:12px}
+.step-list li{padding:6px 0;font-size:13px;display:flex;align-items:center;gap:8px}
+.step-check{width:16px;height:16px;border:2px solid var(--border);border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.step-check.done{background:var(--green);border-color:var(--green);color:var(--bg)}
+.task-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn-sm{font-size:12px;padding:6px 12px}
+.btn-blue{background:var(--blue);color:var(--bg)}.btn-blue:hover{filter:brightness(1.1)}
+.btn-green{background:var(--green);color:var(--bg)}.btn-green:hover{filter:brightness(1.1)}
+.btn-yellow{background:var(--yellow);color:var(--bg)}.btn-yellow:hover{filter:brightness(1.1)}
+.btn-ghost{background:var(--bg3);color:var(--text);border:1px solid var(--border)}.btn-ghost:hover{background:var(--bg4)}
+.hint-box{background:var(--bg);border:1px solid var(--yellow);border-radius:6px;padding:10px 14px;margin-top:8px;font-size:13px;color:var(--yellow)}
+.submit-area{margin-top:12px}
+.submit-area textarea{width:100%;height:80px;resize:vertical;margin-bottom:8px}
+
+/* SQL CONSOLE */
+.sql-layout{display:flex;flex-direction:column;flex:1;gap:12px;min-height:0}
+.sql-editor-wrap{position:relative}
+.sql-editor{width:100%;height:140px;resize:vertical;font-size:14px;padding:12px;line-height:1.5;background:var(--bg);border:1px solid var(--border);border-radius:8px}
+.sql-toolbar{display:flex;gap:8px;align-items:center}
+.sql-result{flex:1;overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--bg)}
+.sql-table{width:100%;border-collapse:collapse;font-size:13px}
+.sql-table th{background:var(--bg3);padding:8px 12px;text-align:left;font-size:12px;color:var(--text2);border-bottom:1px solid var(--border);position:sticky;top:0}
+.sql-table td{padding:6px 12px;border-bottom:1px solid var(--border);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sql-table tr:hover td{background:var(--hover)}
+.sql-status{font-size:12px;color:var(--text2);display:flex;gap:16px}
+.sql-error{color:var(--red);font-size:13px;padding:12px;white-space:pre-wrap}
+.sql-history{max-height:200px;overflow-y:auto}
+.sql-history-item{padding:6px 10px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sql-history-item:hover{background:var(--hover);color:var(--text)}
+.schema-ref{max-height:300px;overflow-y:auto}
+.schema-table{margin-bottom:8px}
+.schema-table summary{font-size:13px;font-weight:600;cursor:pointer;padding:4px 0;color:var(--teal)}
+.schema-col{font-size:12px;color:var(--text2);padding:2px 0 2px 16px}
+
+/* EHR */
+.ehr-search{display:flex;gap:8px;margin-bottom:12px}
+.ehr-search input{flex:1}
+.patient-list{border:1px solid var(--border);border-radius:8px;overflow:auto;max-height:300px}
+.patient-row{padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px;display:grid;grid-template-columns:100px 1fr 100px 80px;gap:8px;align-items:center}
+.patient-row:hover{background:var(--hover)}
+.patient-detail{display:none}
+.patient-detail.active{display:block}
+.patient-demo{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:16px}
+.patient-demo .field{font-size:13px}.patient-demo .field-label{font-size:11px;color:var(--text2)}
+.tab-bar{display:flex;gap:4px;margin-bottom:12px}
+.tab-btn{background:transparent;color:var(--text2);font-size:13px;padding:6px 14px;border-radius:6px 6px 0 0;border-bottom:2px solid transparent}
+.tab-btn.active{color:var(--text);border-bottom-color:var(--teal);background:var(--bg3)}
+.tab-content{display:none}.tab-content.active{display:block}
+.data-table{width:100%;border-collapse:collapse;font-size:12px}
+.data-table th{background:var(--bg3);padding:6px 10px;text-align:left;color:var(--text2);border-bottom:1px solid var(--border);position:sticky;top:0}
+.data-table td{padding:5px 10px;border-bottom:1px solid var(--border)}
+.data-table tr:hover td{background:var(--hover)}
+.abnormal{color:var(--red);font-weight:700}
+
+/* DASHBOARD */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.chart-card{padding:16px}
+.chart-card h3{font-size:14px;color:var(--text2);margin-bottom:12px}
+.bar-chart{display:flex;flex-direction:column;gap:6px}
+.bar-row{display:flex;align-items:center;gap:8px;font-size:12px}
+.bar-label{width:140px;text-align:right;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
+.bar-track{flex:1;height:20px;background:var(--bg);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .5s}
+.bar-val{width:50px;font-size:11px;color:var(--text2)}
+
+/* PYTHON */
+.py-editor{width:100%;height:160px;resize:vertical;font-size:14px;padding:12px;line-height:1.5;background:var(--bg);border:1px solid var(--border);border-radius:8px}
+.py-output{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:100px;max-height:400px;overflow:auto;white-space:pre-wrap;font-size:13px}
+
+/* HELP */
+.help-content{max-width:800px}
+.help-section{margin-bottom:20px}
+.help-section h3{font-size:15px;color:var(--teal);margin-bottom:8px}
+.help-section pre{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;overflow-x:auto;white-space:pre-wrap;margin:8px 0}
+
+/* LOADING */
+.loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text2)}
+.spinner{width:20px;height:20px;border:3px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .6s linear infinite;margin-right:10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.pulse{animation:pulse 1.5s ease-in-out infinite}
+
+/* RIGHT SIDEBAR */
+.right-sidebar{width:280px;background:var(--bg2);border-left:1px solid var(--border);padding:16px;overflow-y:auto;flex-shrink:0;display:none}
+.right-sidebar.active{display:block}
+.rs-title{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:8px}
+.active-task-card{background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:12px}
+.active-task-card h4{font-size:14px;margin-bottom:4px}
+.active-task-card p{font-size:12px;color:var(--text2)}
+.help-panel-text{font-size:13px;color:var(--text2);white-space:pre-wrap;line-height:1.6}
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup">
+<div class="setup-card">
+  <div class="setup-header">
+    <h1>&#9877; Health Informatics Drill<span>Interactive Clinical Informatics Simulation Platform</span></h1>
+  </div>
+
+  <div class="form-section">
+    <h3>Facility &amp; Role</h3>
+    <div class="form-row">
+      <div class="form-group"><label>Facility Type</label>
+        <select id="facilityType"><option>Community Hospital</option><option>Academic Medical Center</option><option>Multi-Site Health System</option><option>Ambulatory Clinic</option></select>
+      </div>
+      <div class="form-group"><label>Your Role</label>
+        <select id="role"><option>Clinical Informatics Analyst</option><option>Health Information Specialist</option><option>Clinical Data Analyst</option><option>EHR System Administrator</option></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>Workload Configuration</h3>
+    <div class="form-group" style="margin-bottom:12px"><label>Number of Tasks</label>
+      <div class="slider-row"><input type="range" id="taskCount" min="1" max="15" value="5"><span class="slider-val" id="taskCountVal">5</span></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Task Time Target</label>
+        <select id="timeTarget"><option value="15">15 min — Quick Task</option><option value="30">30 min — Half Hour</option><option value="60">1 hour — Standard</option><option value="120" selected>2 hours — Extended</option><option value="240">4 hours — Half Shift</option><option value="480">8 hours — Full Shift</option></select>
+      </div>
+      <div class="form-group"><label>Shift Duration</label>
+        <select id="shiftDuration"><option value="2">2 hours</option><option value="4">4 hours</option><option value="8" selected>8 hours</option></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>Difficulty</h3>
+    <div class="radio-group" id="difficultyGroup">
+      <div class="radio-opt" data-val="beginner"><div class="ro-label">Beginner</div><div class="ro-desc">Guided with examples</div></div>
+      <div class="radio-opt active" data-val="intermediate"><div class="ro-label">Intermediate</div><div class="ro-desc">Some guidance</div></div>
+      <div class="radio-opt" data-val="advanced"><div class="ro-label">Advanced</div><div class="ro-desc">Minimal support</div></div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>Assistance Level</h3>
+    <div class="radio-group" id="assistGroup">
+      <div class="radio-opt" data-val="full"><div class="ro-label">Full Walkthrough</div><div class="ro-desc">Step-by-step for every task</div></div>
+      <div class="radio-opt active" data-val="hints"><div class="ro-label">Hints Available</div><div class="ro-desc">Guidance when you ask</div></div>
+      <div class="radio-opt" data-val="minimal"><div class="ro-label">Minimal</div><div class="ro-desc">Just the task description</div></div>
+      <div class="radio-opt" data-val="none"><div class="ro-label">None</div><div class="ro-desc">Complete independence</div></div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>Tools</h3>
+    <div class="toggle-row">
+      <div class="toggle" id="pythonToggle" onclick="this.classList.toggle('on')"></div>
+      <div><div style="font-size:14px;font-weight:600">Python Console</div><div style="font-size:12px;color:var(--text2)">Enable Python scripting for data analysis tasks</div></div>
+    </div>
+  </div>
+
+  <button class="btn-start" onclick="startScenario()">Start Shift &#9654;</button>
+</div>
+</div>
+
+<!-- WORKSPACE -->
+<div id="workspace">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-brand">&#9877; HI Drill</div>
+    <div class="topbar-clock">
+      <span id="clockTime" style="font-size:13px;color:var(--text2)"></span>
+      <div class="shift-bar"><div class="shift-bar-fill" id="shiftBarFill" style="width:0%"></div></div>
+      <span id="shiftRemaining" style="font-size:12px;color:var(--text2)"></span>
+    </div>
+    <div class="topbar-tasks"><b id="tasksCompleted">0</b>/<span id="tasksTotal">0</span> tasks</div>
+    <button class="btn-reset" onclick="resetScenario()">Reset Shift</button>
+    <span class="role-badge" id="roleBadge"></span>
+  </div>
+
+  <div class="main">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <button class="nav-btn active" data-panel="inbox" onclick="switchPanel('inbox')">&#128231;<span class="nav-label">Inbox</span><span class="nav-badge" id="inboxBadge" style="display:none">0</span></button>
+      <button class="nav-btn" data-panel="tasks" onclick="switchPanel('tasks')">&#128203;<span class="nav-label">Tasks</span><span class="nav-badge" id="taskBadge" style="display:none">0</span></button>
+      <button class="nav-btn" data-panel="ehr" onclick="switchPanel('ehr')">&#127973;<span class="nav-label">EHR</span></button>
+      <button class="nav-btn" data-panel="sql" onclick="switchPanel('sql')">&#128190;<span class="nav-label">SQL</span></button>
+      <button class="nav-btn" data-panel="dashboard" onclick="switchPanel('dashboard')">&#128202;<span class="nav-label">Dash</span></button>
+      <button class="nav-btn" data-panel="python" id="pythonNav" style="display:none" onclick="switchPanel('python')">&#128013;<span class="nav-label">Python</span></button>
+      <button class="nav-btn" data-panel="help" onclick="switchPanel('help')">&#10067;<span class="nav-label">Help</span></button>
+    </div>
+
+    <div class="content">
+      <!-- INBOX PANEL -->
+      <div class="panel active" id="panel-inbox">
+        <div style="display:flex;align-items:center;gap:12px"><h2 class="panel-title">Inbox</h2><span id="emailCountLabel" class="panel-subtitle"></span></div>
+        <div class="email-filters">
+          <button class="email-filter-btn active" onclick="filterEmails('all',this)">All</button>
+          <button class="email-filter-btn" onclick="filterEmails('unread',this)">Unread</button>
+          <button class="email-filter-btn" onclick="filterEmails('urgent',this)">Urgent</button>
+          <button class="email-filter-btn" onclick="filterEmails('task',this)">Task-Related</button>
+        </div>
+        <div class="email-layout card" style="padding:0;flex:1;min-height:400px">
+          <div class="email-list" id="emailList"></div>
+          <div class="email-detail" id="emailDetail"><div style="color:var(--text3);text-align:center;padding:60px 20px">Select an email to read</div></div>
+        </div>
+      </div>
+
+      <!-- TASKS PANEL -->
+      <div class="panel" id="panel-tasks">
+        <div style="display:flex;align-items:center;gap:12px"><h2 class="panel-title">Task Queue</h2><span id="taskCountLabel" class="panel-subtitle"></span></div>
+        <div id="taskList" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+
+      <!-- EHR PANEL -->
+      <div class="panel" id="panel-ehr">
+        <h2 class="panel-title">Electronic Health Records</h2>
+        <div class="ehr-search">
+          <input type="text" id="ehrSearch" placeholder="Search by name or MRN..." onkeyup="if(event.key==='Enter')searchPatients()">
+          <button class="btn-sm btn-blue" onclick="searchPatients()">Search</button>
+        </div>
+        <div id="patientListWrap">
+          <div class="patient-list" id="patientList"></div>
+          <div style="margin-top:8px;display:flex;gap:8px" id="patientPager"></div>
+        </div>
+        <div class="patient-detail" id="patientDetail"></div>
+      </div>
+
+      <!-- SQL CONSOLE -->
+      <div class="panel" id="panel-sql">
+        <h2 class="panel-title">SQL Console</h2>
+        <div class="sql-layout">
+          <textarea class="sql-editor mono" id="sqlEditor" placeholder="-- Write your SQL query here&#10;-- Press Ctrl+Enter to execute&#10;SELECT * FROM patients LIMIT 10;"></textarea>
+          <div class="sql-toolbar">
+            <button class="btn-sm btn-green" onclick="executeSQL()">&#9654; Execute</button>
+            <button class="btn-sm btn-ghost" onclick="document.getElementById('sqlEditor').value=''">Clear</button>
+            <button class="btn-sm btn-ghost" onclick="exportCSV()">Export CSV</button>
+            <div class="sql-status" id="sqlStatus"></div>
+          </div>
+          <div style="display:flex;gap:12px;flex:1;min-height:0;overflow:hidden">
+            <div class="sql-result" id="sqlResult" style="flex:1"><div style="color:var(--text3);text-align:center;padding:40px">Results will appear here</div></div>
+            <div style="width:240px;overflow:hidden;display:flex;flex-direction:column;gap:8px;flex-shrink:0">
+              <details open><summary style="font-size:12px;color:var(--text2);cursor:pointer">Schema Reference</summary><div class="schema-ref" id="schemaRef"><div class="loading"><span class="spinner"></span>Loading...</div></div></details>
+              <details><summary style="font-size:12px;color:var(--text2);cursor:pointer">Query History</summary><div class="sql-history" id="sqlHistory"><div style="font-size:12px;color:var(--text3);padding:8px">No queries yet</div></div></details>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DASHBOARD PANEL -->
+      <div class="panel" id="panel-dashboard">
+        <h2 class="panel-title">Operations Dashboard</h2>
+        <div class="kpi-grid" id="kpiGrid"></div>
+        <div class="chart-grid" id="chartGrid"></div>
+      </div>
+
+      <!-- PYTHON PANEL -->
+      <div class="panel" id="panel-python">
+        <h2 class="panel-title">Python Console</h2>
+        <p class="panel-subtitle" style="margin-bottom:8px">Available: sqlite3, json, csv, statistics, datetime. Database at 'hinfo_drill.db'</p>
+        <textarea class="py-editor mono" id="pyEditor" placeholder="# Write Python code here&#10;# Press Ctrl+Enter to run&#10;# Database connection is pre-configured as 'conn'&#10;&#10;rows = cursor.execute('SELECT COUNT(*) FROM patients').fetchone()&#10;print(f'Total patients: {rows[0]}')"></textarea>
+        <div style="display:flex;gap:8px;margin:8px 0">
+          <button class="btn-sm btn-green" onclick="executePython()">&#9654; Run</button>
+          <button class="btn-sm btn-ghost" onclick="document.getElementById('pyEditor').value=''">Clear</button>
+        </div>
+        <div class="py-output mono" id="pyOutput">Output will appear here</div>
+      </div>
+
+      <!-- HELP PANEL -->
+      <div class="panel" id="panel-help">
+        <h2 class="panel-title">Reference &amp; Help</h2>
+        <div class="help-content">
+          <div class="help-section card">
+            <h3>Common SQL Patterns for Health Informatics</h3>
+            <pre class="mono">-- Patient lookup by MRN
+SELECT * FROM patients WHERE mrn = 'MRN-000001';
+
+-- Active encounters with department
+SELECT e.*, d.name AS department
+FROM encounters e
+JOIN departments d ON e.department_id = d.id
+WHERE e.status = 'active';
+
+-- Lab results for a patient (with abnormal flagging)
+SELECT lr.test_name, lr.value, lr.unit,
+       lr.reference_range_low, lr.reference_range_high,
+       lr.abnormal_flag
+FROM lab_results lr
+JOIN patients p ON lr.patient_id = p.id
+WHERE p.mrn = 'MRN-000001'
+ORDER BY lr.result_date DESC;
+
+-- Medication orders with drug names
+SELECT mo.*, m.name AS medication
+FROM medication_orders mo
+JOIN medications m ON mo.medication_id = m.id
+WHERE mo.patient_id = 1;
+
+-- Department census (active patients by department)
+SELECT d.name, COUNT(e.id) AS active_patients
+FROM departments d
+LEFT JOIN encounters e ON d.id = e.department_id
+  AND e.status = 'active'
+GROUP BY d.id ORDER BY active_patients DESC;
+
+-- Diagnosis frequency
+SELECT dx.icd10_code, dx.description, COUNT(*) AS freq
+FROM diagnoses dx
+GROUP BY dx.icd10_code
+ORDER BY freq DESC LIMIT 20;</pre>
+          </div>
+          <div class="help-section card">
+            <h3>Database Tables Quick Reference</h3>
+            <pre class="mono">patients        - id, mrn, first_name, last_name, dob, gender, status
+encounters      - id, patient_id, provider_id, department_id, encounter_type, admit_date, discharge_date, status
+diagnoses       - id, encounter_id, patient_id, icd10_code, description, diagnosis_type
+medication_orders - id, encounter_id, patient_id, medication_id, dose, unit, frequency, route, status
+medications     - id, name, generic_name, drug_class, default_dose, default_route
+lab_results     - id, encounter_id, patient_id, test_name, value, unit, abnormal_flag, result_date
+vital_signs     - id, encounter_id, patient_id, temperature, heart_rate, blood_pressure_systolic/diastolic, spo2
+allergies       - id, patient_id, allergen, reaction, severity, allergy_type
+orders          - id, encounter_id, patient_id, order_type, order_text, priority, status
+procedures      - id, encounter_id, patient_id, cpt_code, description, procedure_date
+providers       - id, npi, first_name, last_name, credentials, specialty, department_id
+departments     - id, name, code, floor, building, bed_count
+audit_log       - id, user_id, action, table_name, record_id, timestamp, ip_address
+hl7_messages    - id, message_type, direction, sending_facility, status, error_message
+clinical_alerts - id, patient_id, alert_type, severity, message, status
+system_status   - id, system_name, status, response_time_ms
+quality_measures- id, measure_name, measure_code, numerator, denominator, rate</pre>
+          </div>
+          <div class="help-section card">
+            <h3>HIPAA Quick Reference</h3>
+            <p style="font-size:13px;color:var(--text2)">
+              <b>Protected Health Information (PHI)</b> includes: names, dates, phone/fax numbers, email addresses, SSN, MRN, account numbers, biometric identifiers, photos, and any other unique identifying number.<br><br>
+              <b>Minimum Necessary Standard:</b> Access only the minimum PHI needed to perform your job function.<br><br>
+              <b>Break the Glass:</b> Emergency override access that is audited and must be justified.<br><br>
+              <b>Audit Trail:</b> All access to patient records must be logged with user ID, timestamp, action performed, and patient identifier.
+            </p>
+          </div>
+          <div class="help-section card">
+            <h3>HL7 Message Types</h3>
+            <pre class="mono">ADT - Admit/Discharge/Transfer
+ORM - Order Message
+ORU - Observation Result (Lab Results)
+SIU - Scheduling Information
+DFT - Detailed Financial Transaction
+MDM - Medical Document Management</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDEBAR -->
+    <div class="right-sidebar" id="rightSidebar">
+      <div class="rs-title">Active Task</div>
+      <div id="activeTaskCard"><div style="font-size:13px;color:var(--text3)">No active task. Select a task to begin.</div></div>
+      <div class="rs-title" style="margin-top:16px">Assistance</div>
+      <div class="help-panel-text" id="helpPanelText">Select a task and click "Get Help" for guidance.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- STATE ----------
+const S = {
+  scenario: null,
+  emails: [],
+  tasks: [],
+  currentPanel: 'inbox',
+  selectedEmail: null,
+  selectedTask: null,
+  sqlHistory: [],
+  lastSqlResult: null,
+  shiftStart: null,
+  shiftDuration: null,
+  clockInterval: null,
+  tables: null,
+  ehrPage: 1,
+};
+
+// ---------- API ----------
+async function api(url, method='GET', body=null) {
+  const opts = {method, headers:{'Content-Type':'application/json'}};
+  if(body) opts.body = JSON.stringify(body);
+  const r = await fetch(url, opts);
+  return r.json();
+}
+
+// ---------- RADIO GROUPS ----------
+document.querySelectorAll('.radio-group').forEach(g => {
+  g.querySelectorAll('.radio-opt').forEach(o => {
+    o.addEventListener('click', () => {
+      g.querySelectorAll('.radio-opt').forEach(x => x.classList.remove('active'));
+      o.classList.add('active');
+    });
+  });
+});
+
+// SLIDER
+const tc = document.getElementById('taskCount');
+const tcv = document.getElementById('taskCountVal');
+tc.addEventListener('input', () => tcv.textContent = tc.value);
+
+// ---------- SCENARIO ----------
+async function startScenario() {
+  const btn = document.querySelector('.btn-start');
+  btn.textContent = 'Initializing...';
+  btn.disabled = true;
+  const data = {
+    facility_type: document.getElementById('facilityType').value,
+    role: document.getElementById('role').value,
+    task_count: parseInt(tc.value),
+    task_time_target_minutes: parseInt(document.getElementById('timeTarget').value),
+    shift_duration: parseInt(document.getElementById('shiftDuration').value),
+    difficulty: document.querySelector('#difficultyGroup .radio-opt.active').dataset.val,
+    assistance_level: document.querySelector('#assistGroup .radio-opt.active').dataset.val,
+    python_enabled: document.getElementById('pythonToggle').classList.contains('on'),
+  };
+  try {
+    const res = await api('/api/scenario/start', 'POST', data);
+    S.scenario = data;
+    S.shiftStart = Date.now();
+    S.shiftDuration = data.shift_duration * 3600 * 1000;
+    document.getElementById('setup').classList.add('hidden');
+    document.getElementById('workspace').classList.add('active');
+    document.getElementById('roleBadge').textContent = data.role;
+    if(data.python_enabled) document.getElementById('pythonNav').style.display='';
+    startClock();
+    await Promise.all([loadEmails(), loadTasks(), loadSchema(), loadDashboard()]);
+    updateBadges();
+    document.getElementById('rightSidebar').classList.add('active');
+  } catch(e) {
+    alert('Error starting scenario: ' + e.message);
+  }
+  btn.textContent = 'Start Shift \u25B6';
+  btn.disabled = false;
+}
+
+async function resetScenario() {
+  if(!confirm('Reset the entire scenario? All progress will be lost.')) return;
+  await api('/api/scenario/reset', 'POST');
+  clearInterval(S.clockInterval);
+  S.emails=[];S.tasks=[];S.selectedEmail=null;S.selectedTask=null;S.sqlHistory=[];
+  document.getElementById('workspace').classList.remove('active');
+  document.getElementById('setup').classList.remove('hidden');
+  document.getElementById('rightSidebar').classList.remove('active');
+}
+
+// ---------- CLOCK ----------
+function startClock() {
+  updateClock();
+  S.clockInterval = setInterval(updateClock, 1000);
+}
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clockTime').textContent = now.toLocaleTimeString();
+  const elapsed = Date.now() - S.shiftStart;
+  const pct = Math.min(100, (elapsed / S.shiftDuration) * 100);
+  document.getElementById('shiftBarFill').style.width = pct + '%';
+  const rem = Math.max(0, S.shiftDuration - elapsed);
+  const h = Math.floor(rem/3600000), m = Math.floor((rem%3600000)/60000);
+  document.getElementById('shiftRemaining').textContent = h+'h '+m+'m left';
+  if(pct > 75) document.getElementById('shiftBarFill').style.background = 'var(--yellow)';
+  if(pct > 90) document.getElementById('shiftBarFill').style.background = 'var(--red)';
+}
+
+// ---------- NAVIGATION ----------
+function switchPanel(name) {
+  S.currentPanel = name;
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.panel===name));
+  if(name==='dashboard') loadDashboard();
+  if(name==='ehr') searchPatients();
+}
+
+// ---------- EMAILS ----------
+let emailFilter = 'all';
+async function loadEmails() {
+  const res = await api('/api/emails?filter='+emailFilter);
+  S.emails = res.emails || [];
+  renderEmailList();
+}
+function filterEmails(f, btn) {
+  emailFilter = f;
+  document.querySelectorAll('.email-filter-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  loadEmails();
+}
+function renderEmailList() {
+  const el = document.getElementById('emailList');
+  document.getElementById('emailCountLabel').textContent = S.emails.length + ' messages';
+  if(!S.emails.length){ el.innerHTML='<div style="padding:20px;color:var(--text3);text-align:center">No emails</div>'; return; }
+  el.innerHTML = S.emails.map(e => `
+    <div class="email-item ${e.read?'':'unread'} ${S.selectedEmail?.id===e.id?'active':''}" onclick="selectEmail('${e.id}')">
+      <div class="email-from"><span><span class="priority-dot ${e.priority}"></span>${e.from_name}</span><span class="email-time">${e.timestamp.slice(11,16)}</span></div>
+      <div class="email-subject">${e.subject}</div>
+    </div>`).join('');
+  updateBadges();
+}
+async function selectEmail(id) {
+  const e = S.emails.find(x=>x.id===id);
+  if(!e) return;
+  S.selectedEmail = e;
+  if(!e.read) { e.read=true; await api(`/api/emails/${id}/read`,'POST'); }
+  renderEmailList();
+  const det = document.getElementById('emailDetail');
+  det.innerHTML = `
+    <div class="email-detail-header">
+      <h2>${e.subject}</h2>
+      <div class="email-meta">From: <b>${e.from_name}</b> (${e.from_role}) &lt;${e.from_email}&gt;<br>Date: ${e.timestamp}<br>Priority: <span class="priority-dot ${e.priority}"></span>${e.priority}</div>
+    </div>
+    <div class="email-body">${e.body}</div>
+    ${e.related_task_id ? `<div style="margin-top:12px"><button class="btn-sm btn-blue" onclick="goToTask('${e.related_task_id}')">Go to Related Task</button></div>` : ''}
+    <div class="email-reply">
+      <textarea id="replyText" placeholder="Type your reply..."></textarea>
+      <button class="btn-sm btn-blue" onclick="replyEmail('${e.id}')">Send Reply</button>
+      <span id="replyStatus" style="font-size:12px;color:var(--green);margin-left:8px"></span>
+    </div>`;
+  updateBadges();
+}
+async function replyEmail(id) {
+  const text = document.getElementById('replyText').value;
+  if(!text.trim()) return;
+  const res = await api(`/api/emails/${id}/reply`,'POST',{reply_text:text});
+  document.getElementById('replyStatus').textContent = 'Sent! Response: ' + (res.auto_response||'').slice(0,60)+'...';
+}
+function goToTask(taskId) {
+  switchPanel('tasks');
+  setTimeout(()=>{ const el=document.querySelector(`[data-taskid="${taskId}"]`); if(el){el.scrollIntoView({behavior:'smooth'});el.click();} },100);
+}
+
+// ---------- TASKS ----------
+async function loadTasks() {
+  const res = await api('/api/tasks');
+  S.tasks = res.tasks || [];
+  renderTasks();
+}
+function renderTasks() {
+  const el = document.getElementById('taskList');
+  const completed = S.tasks.filter(t=>t.status==='completed').length;
+  document.getElementById('taskCountLabel').textContent = `${completed}/${S.tasks.length} completed`;
+  document.getElementById('tasksCompleted').textContent = completed;
+  document.getElementById('tasksTotal').textContent = S.tasks.length;
+  el.innerHTML = S.tasks.map(t => {
+    const expanded = S.selectedTask?.id===t.id;
+    return `
+    <div class="task-item ${expanded?'expanded':''}" data-taskid="${t.id}" onclick="toggleTask('${t.id}')">
+      <div class="task-header">
+        <span class="task-status-dot ${t.status}"></span>
+        <span class="task-title">${t.title}</span>
+        <div class="task-badges">
+          <span class="tbadge cat">${t.category}</span>
+          <span class="tbadge time">~${t.estimated_minutes}m</span>
+          ${t.priority==='high'?'<span class="tbadge prio-high">HIGH</span>':''}
+          ${t.required_tools.map(x=>`<span class="tbadge tool">${x}</span>`).join('')}
+        </div>
+      </div>
+      <div class="task-detail">
+        <div class="task-desc">${t.description}</div>
+        <ul class="step-list">${t.steps.map((s,i)=>`<li><span class="step-check ${s.completed?'done':''}" onclick="event.stopPropagation();toggleStep('${t.id}',${i})">${s.completed?'&#10003;':''}</span>${s.text}</li>`).join('')}</ul>
+        <div id="hints-${t.id}">${t.hints.map(h=>`<div class="hint-box">${h}</div>`).join('')}</div>
+        <div class="task-actions">
+          ${t.status==='pending'?`<button class="btn-sm btn-blue" onclick="event.stopPropagation();updateTaskStatus('${t.id}','in_progress')">Start Task</button>`:''}
+          ${t.status==='in_progress'?`<button class="btn-sm btn-green" onclick="event.stopPropagation();updateTaskStatus('${t.id}','completed')">Mark Complete</button>`:''}
+          <button class="btn-sm btn-yellow" onclick="event.stopPropagation();getHint('${t.id}')">Get Hint</button>
+          <button class="btn-sm btn-ghost" onclick="event.stopPropagation();getHelp('${t.id}')">Get Help</button>
+          ${t.related_email_id?`<button class="btn-sm btn-ghost" onclick="event.stopPropagation();switchPanel('inbox');setTimeout(()=>selectEmail('${t.related_email_id}'),100)">View Email</button>`:''}
+        </div>
+        <div class="submit-area">
+          <textarea id="submit-${t.id}" placeholder="Paste your SQL query, Python code, or written response here..."></textarea>
+          <button class="btn-sm btn-green" onclick="event.stopPropagation();submitTask('${t.id}')">Submit Work</button>
+          <span id="submit-status-${t.id}" style="font-size:12px;margin-left:8px"></span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  updateBadges();
+}
+function toggleTask(id) {
+  const t = S.tasks.find(x=>x.id===id);
+  if(S.selectedTask?.id===id) S.selectedTask=null;
+  else S.selectedTask=t;
+  renderTasks();
+  updateActiveTask();
+}
+async function updateTaskStatus(id, status) {
+  await api(`/api/tasks/${id}/status`,'POST',{status});
+  const t=S.tasks.find(x=>x.id===id); if(t)t.status=status;
+  renderTasks(); updateActiveTask();
+}
+async function toggleStep(taskId, idx) {
+  const t=S.tasks.find(x=>x.id===taskId); if(!t)return;
+  t.steps[idx].completed = !t.steps[idx].completed;
+  await api(`/api/tasks/${taskId}/steps`,'POST',{step_index:idx,completed:t.steps[idx].completed});
+  renderTasks();
+}
+async function getHint(id) {
+  const res = await api(`/api/tasks/${id}/hint`);
+  if(res.hint) {
+    const t=S.tasks.find(x=>x.id===id);
+    if(t && !t.hints.includes(res.hint)) t.hints.push(res.hint);
+    renderTasks();
+  } else {
+    alert(res.message || 'No more hints available.');
+  }
+}
+async function getHelp(id) {
+  const res = await api(`/api/help/task/${id}`);
+  document.getElementById('helpPanelText').textContent = res.help || 'No help available.';
+  document.getElementById('rightSidebar').classList.add('active');
+}
+async function submitTask(id) {
+  const ta = document.getElementById('submit-'+id);
+  const work = ta ? ta.value : '';
+  const tool = work.toLowerCase().includes('select') ? 'sql' : 'text';
+  const res = await api(`/api/tasks/${id}/submit`,'POST',{work,tool_used:tool});
+  const st = document.getElementById('submit-status-'+id);
+  if(st) {
+    st.textContent = res.message||'';
+    st.style.color = res.status==='completed'?'var(--green)':'var(--yellow)';
+  }
+  if(res.status==='completed') { const t=S.tasks.find(x=>x.id===id); if(t)t.status='completed'; }
+  renderTasks();
+}
+function updateActiveTask() {
+  const ac = document.getElementById('activeTaskCard');
+  if(!S.selectedTask) { ac.innerHTML='<div style="font-size:13px;color:var(--text3)">No active task selected.</div>'; return; }
+  const t = S.selectedTask;
+  ac.innerHTML=`<div class="active-task-card"><h4>${t.title}</h4><p>Category: ${t.category} | ~${t.estimated_minutes}m<br>Status: ${t.status}<br>Tools: ${t.required_tools.join(', ')}</p></div>`;
+}
+
+// ---------- SQL ----------
+async function loadSchema() {
+  const res = await api('/api/sql/tables');
+  S.tables = res.tables;
+  const el = document.getElementById('schemaRef');
+  if(!S.tables){el.innerHTML='<div style="color:var(--text3);font-size:12px">Failed to load</div>';return;}
+  el.innerHTML = Object.entries(S.tables).map(([name, cols]) =>
+    `<details class="schema-table"><summary>${name}</summary>${cols.map(c=>`<div class="schema-col mono">${c.name} <span style="color:var(--text3)">${c.type}</span></div>`).join('')}</details>`
+  ).join('');
+}
+async function executeSQL() {
+  const query = document.getElementById('sqlEditor').value.trim();
+  if(!query) return;
+  const el = document.getElementById('sqlResult');
+  el.innerHTML = '<div class="loading"><span class="spinner"></span>Executing...</div>';
+  const res = await api('/api/sql/execute','POST',{query});
+  if(res.error) {
+    el.innerHTML = `<div class="sql-error">${res.error}</div>`;
+    document.getElementById('sqlStatus').innerHTML = '';
+    return;
+  }
+  S.lastSqlResult = res;
+  S.sqlHistory.unshift(query);
+  renderSqlHistory();
+  document.getElementById('sqlStatus').innerHTML = `<span>${res.row_count} rows</span><span>${res.execution_time_ms}ms</span>`;
+  if(!res.columns.length) { el.innerHTML='<div style="padding:20px;color:var(--text3)">Query executed successfully (no results)</div>'; return; }
+  el.innerHTML = `<table class="sql-table"><thead><tr>${res.columns.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${res.rows.map(r=>`<tr>${r.map(v=>`<td>${v===null?'<span style="color:var(--text3)">NULL</span>':v}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+function renderSqlHistory() {
+  const el = document.getElementById('sqlHistory');
+  if(!S.sqlHistory.length){el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px">No queries yet</div>';return;}
+  el.innerHTML = S.sqlHistory.slice(0,20).map(q=>`<div class="sql-history-item" onclick="document.getElementById('sqlEditor').value=this.textContent">${q}</div>`).join('');
+}
+function exportCSV() {
+  if(!S.lastSqlResult || !S.lastSqlResult.columns.length) return;
+  const r = S.lastSqlResult;
+  let csv = r.columns.join(',') + '\n';
+  r.rows.forEach(row => { csv += row.map(v => `"${(v===null?'':String(v)).replace(/"/g,'""')}"`).join(',') + '\n'; });
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'query_results.csv';
+  a.click();
+}
+
+// SQL keyboard shortcut
+document.getElementById('sqlEditor').addEventListener('keydown', e => {
+  if(e.ctrlKey && e.key==='Enter') { e.preventDefault(); executeSQL(); }
+});
+
+// ---------- PYTHON ----------
+async function executePython() {
+  const code = document.getElementById('pyEditor').value.trim();
+  if(!code) return;
+  const el = document.getElementById('pyOutput');
+  el.textContent = 'Running...';
+  el.style.color = 'var(--text2)';
+  const res = await api('/api/python/execute','POST',{code});
+  if(res.error && !res.output) {
+    el.textContent = 'Error: ' + res.error;
+    el.style.color = 'var(--red)';
+  } else {
+    el.textContent = (res.output||'') + (res.error ? '\nStderr: '+res.error : '');
+    el.style.color = res.returncode===0 ? 'var(--text)' : 'var(--yellow)';
+  }
+}
+document.getElementById('pyEditor').addEventListener('keydown', e => {
+  if(e.ctrlKey && e.key==='Enter') { e.preventDefault(); executePython(); }
+});
+
+// ---------- EHR ----------
+async function searchPatients(page) {
+  S.ehrPage = page || 1;
+  const search = document.getElementById('ehrSearch').value;
+  const res = await api(`/api/ehr/patients?search=${encodeURIComponent(search)}&page=${S.ehrPage}&per_page=20`);
+  const el = document.getElementById('patientList');
+  document.getElementById('patientDetail').classList.remove('active');
+  document.getElementById('patientDetail').innerHTML='';
+  if(!res.patients.length){el.innerHTML='<div style="padding:16px;color:var(--text3)">No patients found</div>';return;}
+  el.innerHTML = `<div class="patient-row" style="font-weight:700;color:var(--text2);font-size:12px"><span>MRN</span><span>Name</span><span>DOB</span><span>Gender</span></div>`
+    + res.patients.map(p=>`<div class="patient-row" onclick="loadPatient('${p.mrn}')"><span style="color:var(--teal)">${p.mrn}</span><span>${p.last_name}, ${p.first_name}</span><span>${p.dob}</span><span>${p.gender}</span></div>`).join('');
+  // Pager
+  const pages = Math.ceil(res.total/20);
+  const pg = document.getElementById('patientPager');
+  pg.innerHTML = '';
+  if(pages > 1) {
+    for(let i=1;i<=Math.min(pages,10);i++) pg.innerHTML += `<button class="btn-sm ${i===S.ehrPage?'btn-blue':'btn-ghost'}" onclick="searchPatients(${i})">${i}</button>`;
+  }
+}
+async function loadPatient(mrn) {
+  const res = await api(`/api/ehr/patients/${mrn}`);
+  if(res.error) return;
+  const p = res.patient;
+  const det = document.getElementById('patientDetail');
+  det.classList.add('active');
+  det.innerHTML = `
+    <div class="card" style="margin-top:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="color:var(--teal)">${p.last_name}, ${p.first_name} (${p.mrn})</h3>
+        <button class="btn-sm btn-ghost" onclick="this.closest('.patient-detail').classList.remove('active')">Close</button>
+      </div>
+      <div class="patient-demo">
+        <div class="field"><div class="field-label">Date of Birth</div>${p.dob}</div>
+        <div class="field"><div class="field-label">Gender</div>${p.gender}</div>
+        <div class="field"><div class="field-label">Race</div>${p.race||'N/A'}</div>
+        <div class="field"><div class="field-label">Phone</div>${p.phone||'N/A'}</div>
+        <div class="field"><div class="field-label">Address</div>${p.address||''}, ${p.city||''} ${p.state||''} ${p.zip||''}</div>
+        <div class="field"><div class="field-label">Status</div>${p.status||'active'}</div>
+      </div>
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="showTab(this,'enc-${p.id}')">Encounters (${res.encounters.length})</button>
+        <button class="tab-btn" onclick="showTab(this,'dx-${p.id}')">Diagnoses (${res.diagnoses.length})</button>
+        <button class="tab-btn" onclick="showTab(this,'med-${p.id}')">Medications (${res.medications.length})</button>
+        <button class="tab-btn" onclick="showTab(this,'lab-${p.id}')">Labs (${res.lab_results.length})</button>
+        <button class="tab-btn" onclick="showTab(this,'allergy-${p.id}')">Allergies (${res.allergies.length})</button>
+        <button class="tab-btn" onclick="showTab(this,'vitals-${p.id}')">Vitals (${res.vitals.length})</button>
+      </div>
+      <div class="tab-content active" id="enc-${p.id}">
+        <table class="data-table"><thead><tr><th>ID</th><th>Type</th><th>Admit</th><th>Discharge</th><th>Dept</th><th>Provider</th><th>Status</th></tr></thead><tbody>
+        ${res.encounters.map(e=>`<tr><td>${e.id}</td><td>${e.encounter_type}</td><td>${e.admit_date||''}</td><td>${e.discharge_date||'<i>active</i>'}</td><td>${e.dept_name||''}</td><td>${e.provider_name||''}</td><td>${e.status}</td></tr>`).join('')}
+        </tbody></table>
+      </div>
+      <div class="tab-content" id="dx-${p.id}">
+        <table class="data-table"><thead><tr><th>ICD-10</th><th>Description</th><th>Type</th><th>Date</th></tr></thead><tbody>
+        ${res.diagnoses.map(d=>`<tr><td>${d.icd10_code}</td><td>${d.description}</td><td>${d.diagnosis_type}</td><td>${d.diagnosis_date||''}</td></tr>`).join('')}
+        </tbody></table>
+      </div>
+      <div class="tab-content" id="med-${p.id}">
+        <table class="data-table"><thead><tr><th>Medication</th><th>Dose</th><th>Route</th><th>Frequency</th><th>Status</th><th>Start</th></tr></thead><tbody>
+        ${res.medications.map(m=>`<tr><td>${m.med_name||''}</td><td>${m.dose} ${m.unit||''}</td><td>${m.route}</td><td>${m.frequency}</td><td>${m.status}</td><td>${m.start_date||''}</td></tr>`).join('')}
+        </tbody></table>
+      </div>
+      <div class="tab-content" id="lab-${p.id}">
+        <table class="data-table"><thead><tr><th>Test</th><th>Value</th><th>Unit</th><th>Range</th><th>Flag</th><th>Date</th></tr></thead><tbody>
+        ${res.lab_results.map(l=>`<tr><td>${l.test_name}</td><td class="${l.abnormal_flag&&l.abnormal_flag!=='N'?'abnormal':''}">${l.value}</td><td>${l.unit||''}</td><td>${l.reference_range_low||''}-${l.reference_range_high||''}</td><td class="${l.abnormal_flag==='C'?'abnormal':''}">${l.abnormal_flag||'N'}</td><td>${l.result_date||''}</td></tr>`).join('')}
+        </tbody></table>
+      </div>
+      <div class="tab-content" id="allergy-${p.id}">
+        <table class="data-table"><thead><tr><th>Allergen</th><th>Type</th><th>Reaction</th><th>Severity</th></tr></thead><tbody>
+        ${res.allergies.map(a=>`<tr><td>${a.allergen}</td><td>${a.allergy_type||''}</td><td>${a.reaction||''}</td><td class="${a.severity==='severe'?'abnormal':''}">${a.severity||''}</td></tr>`).join('')}
+        </tbody></table>
+      </div>
+      <div class="tab-content" id="vitals-${p.id}">
+        <table class="data-table"><thead><tr><th>Date</th><th>Temp</th><th>HR</th><th>BP</th><th>RR</th><th>SpO2</th><th>Pain</th></tr></thead><tbody>
+        ${res.vitals.map(v=>`<tr><td>${v.recorded_at||''}</td><td>${v.temperature||''}</td><td>${v.heart_rate||''}</td><td>${v.blood_pressure_systolic||''}/${v.blood_pressure_diastolic||''}</td><td>${v.respiratory_rate||''}</td><td>${v.spo2||''}</td><td>${v.pain_scale!==null?v.pain_scale:''}</td></tr>`).join('')}
+        </tbody></table>
+      </div>
+    </div>`;
+}
+function showTab(btn, tabId) {
+  const card = btn.closest('.card');
+  card.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  card.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+}
+
+// ---------- DASHBOARD ----------
+async function loadDashboard() {
+  const [metrics, charts] = await Promise.all([api('/api/dashboard/metrics'), api('/api/dashboard/charts')]);
+  const kg = document.getElementById('kpiGrid');
+  kg.innerHTML = [
+    {v:metrics.total_patients, l:'Total Patients'},
+    {v:metrics.encounters_30d, l:'Encounters (30d)'},
+    {v:metrics.avg_los_days+'d', l:'Avg Length of Stay'},
+    {v:metrics.ed_visits_7d, l:'ED Visits (7d)'},
+    {v:metrics.active_encounters, l:'Active Encounters'},
+    {v:metrics.critical_labs_7d, l:'Critical Labs (7d)', c:metrics.critical_labs_7d>0?'var(--red)':''},
+    {v:metrics.hl7_errors, l:'HL7 Errors', c:metrics.hl7_errors>0?'var(--yellow)':''},
+    {v:metrics.open_alerts, l:'Open Alerts', c:metrics.open_alerts>0?'var(--yellow)':''},
+  ].map(k=>`<div class="card kpi"><div class="kpi-val" ${k.c?`style="color:${k.c}"`:''}">${k.v}</div><div class="kpi-label">${k.l}</div></div>`).join('');
+
+  const cg = document.getElementById('chartGrid');
+  const maxEnc = Math.max(...(charts.encounters_by_type||[]).map(x=>x.count),1);
+  const maxDx = Math.max(...(charts.top_diagnoses||[]).map(x=>x.count),1);
+  const maxDept = Math.max(...(charts.department_census||[]).map(x=>x.active),1);
+  const colors = ['var(--teal)','var(--blue)','var(--purple)','var(--yellow)','var(--green)','var(--red)'];
+  cg.innerHTML = `
+    <div class="card chart-card"><h3>Encounters by Type</h3><div class="bar-chart">${(charts.encounters_by_type||[]).map((x,i)=>`<div class="bar-row"><span class="bar-label">${x.encounter_type}</span><div class="bar-track"><div class="bar-fill" style="width:${x.count/maxEnc*100}%;background:${colors[i%6]}"></div></div><span class="bar-val">${x.count}</span></div>`).join('')}</div></div>
+    <div class="card chart-card"><h3>Top 10 Diagnoses</h3><div class="bar-chart">${(charts.top_diagnoses||[]).map((x,i)=>`<div class="bar-row"><span class="bar-label" title="${x.description}">${(x.description||'').slice(0,25)}</span><div class="bar-track"><div class="bar-fill" style="width:${x.count/maxDx*100}%;background:${colors[i%6]}"></div></div><span class="bar-val">${x.count}</span></div>`).join('')}</div></div>
+    <div class="card chart-card"><h3>Department Census (Active)</h3><div class="bar-chart">${(charts.department_census||[]).map((x,i)=>`<div class="bar-row"><span class="bar-label">${x.name}</span><div class="bar-track"><div class="bar-fill" style="width:${x.active/Math.max(maxDept,1)*100}%;background:${colors[i%6]}"></div></div><span class="bar-val">${x.active}</span></div>`).join('')}</div></div>
+    <div class="card chart-card"><h3>System Health</h3><div class="bar-chart">${(charts.system_health||[]).map(x=>`<div class="bar-row"><span class="bar-label">${x.system_name}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,x.response_time_ms/50)}%;background:${x.status==='operational'?'var(--green)':x.status==='degraded'?'var(--yellow)':'var(--red)'}"></div></div><span class="bar-val">${x.status}</span></div>`).join('')}</div></div>
+    <div class="card chart-card" style="grid-column:1/-1"><h3>Monthly Encounter Trend</h3><div class="bar-chart">${(charts.monthly_encounters||[]).map((x,i)=>`<div class="bar-row"><span class="bar-label">${x.month}</span><div class="bar-track"><div class="bar-fill" style="width:${x.count/Math.max(...(charts.monthly_encounters||[]).map(m=>m.count),1)*100}%;background:var(--teal)"></div></div><span class="bar-val">${x.count}</span></div>`).join('')}</div></div>`;
+}
+
+// ---------- BADGES ----------
+function updateBadges() {
+  const unread = S.emails.filter(e=>!e.read).length;
+  const ib = document.getElementById('inboxBadge');
+  if(unread>0){ib.style.display='';ib.textContent=unread;}else{ib.style.display='none';}
+  const pending = S.tasks.filter(t=>t.status==='pending').length;
+  const tb = document.getElementById('taskBadge');
+  if(pending>0){tb.style.display='';tb.textContent=pending;}else{tb.style.display='none';}
+}
+</script>
+</body>
+</html>
