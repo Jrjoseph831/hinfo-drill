@@ -1,0 +1,5 @@
+# Everything needed to build the standalone desktop app
+flask==3.0.0
+faker==20.1.0
+pywebview>=5.0
+pyinstaller>=6.0
