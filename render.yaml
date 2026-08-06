@@ -1,0 +1,19 @@
+# Render deployment for hinfo-drill (Flask).
+#
+# Single worker is REQUIRED: scenario/shift state lives in an in-process dict
+# (SCENARIOS in app.py) keyed by the Flask session, so requests must land on the
+# same worker. Threads give concurrency without splitting that state.
+#
+# The long timeout is deliberate: init_db builds a full synthetic EHR with Faker
+# on boot and on each shift start, which can exceed gunicorn's 30s default on a
+# free-tier CPU.
+services:
+  - type: web
+    name: hinfo-drill
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --workers 1 --threads 4 --timeout 120 --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9

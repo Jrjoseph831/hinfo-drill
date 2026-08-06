@@ -1,5 +1,6 @@
 flask==3.0.0
 faker==20.1.0
+gunicorn==21.2.0
 
 # Desktop build (optional — only needed for building the standalone app)
 # pip install -r requirements-desktop.txt

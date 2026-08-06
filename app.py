@@ -23,6 +23,12 @@ app.secret_key = "hinfo-drill-secret-2026"
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "hinfo_drill.db")
 
+# Under a WSGI server (gunicorn imports `app:app` and never runs the __main__
+# block below), make sure a populated database exists so routes that read data
+# before the first shift is started don't hit an empty file.
+if not os.path.exists(DB_PATH):
+    init_db(DB_PATH)
+
 # ---------------------------------------------------------------------------
 # In-memory scenario store
 # ---------------------------------------------------------------------------

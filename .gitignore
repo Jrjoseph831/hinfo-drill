@@ -1,3 +1,5 @@
 __pycache__/
 *.db
 *.pyc
+scenario_dbs/
+.claude/
