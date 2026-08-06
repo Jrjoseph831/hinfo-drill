@@ -106,6 +106,24 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 }
 #setup-screen.hidden{display:none}
 
+#signin-screen{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:100vh;
+  padding:40px 20px;
+  overflow-y:auto;
+}
+#signin-screen.hidden{display:none}
+.signin-card{max-width:440px}
+.signin-lead{
+  color:var(--text-secondary);
+  font-size:0.95rem;
+  margin-bottom:22px;
+  line-height:1.5;
+}
+.signin-lead strong{color:var(--text-primary)}
+
 .setup-card{
   background:var(--bg-secondary);
   border:1px solid var(--border-color);
@@ -1919,6 +1937,40 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 <!-- ================================================================
      SETUP SCREEN
      ================================================================ -->
+<!-- ================================================================
+     SIGN-IN GATE  (badge in with your name, then configure the shift)
+     ================================================================ -->
+<div id="signin-screen">
+  <div class="setup-card signin-card">
+    <div class="setup-header">
+      <span class="icon">⚕</span>
+      <h1>Health Informatics Drill</h1>
+      <p>Clinical Informatics Simulation</p>
+    </div>
+    <div class="setup-body">
+      <form id="signin-form" autocomplete="off">
+        <p class="signin-lead"><strong>Sign in to your shift.</strong> Badge yourself in to open the queue.</p>
+        <div class="form-group">
+          <label for="analyst-name">Name</label>
+          <input type="text" id="analyst-name" placeholder="Your name" maxlength="40" required>
+        </div>
+        <div class="form-group">
+          <label for="signin-role">Assignment</label>
+          <select id="signin-role">
+            <option value="clinical_informatics_analyst" selected>Clinical Informatics Analyst</option>
+            <option value="health_information_specialist">Health Information Specialist</option>
+            <option value="clinical_data_analyst">Clinical Data Analyst</option>
+            <option value="ehr_system_administrator">EHR System Administrator</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-start" id="btn-signin">Continue &#9654;</button>
+      </form>
+    </div>
+  </div>
+</div>
+<!-- ================================================================
+     SHIFT SETTINGS
+     ================================================================ -->
 <div id="setup-screen">
   <div class="setup-card">
     <div class="setup-header">
@@ -2729,6 +2781,23 @@ function priorityClass(p) {
 /* ================================================================
    SETUP FORM
    ================================================================ */
+/* Sign-in gate: capture the analyst's name, then reveal shift settings. */
+const signinForm = document.getElementById('signin-form');
+signinForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const name = (document.getElementById('analyst-name').value || '').trim();
+  if (!name) {
+    showToast('Enter your name to badge in.', 'warning');
+    return;
+  }
+  state.analystName = name;
+  // Carry the chosen assignment over to the shift-settings screen.
+  const setupRole = document.getElementById('user-role');
+  if (setupRole) setupRole.value = document.getElementById('signin-role').value;
+  document.getElementById('signin-screen').style.display = 'none';
+  document.getElementById('setup-screen').style.display = 'flex';
+});
+
 const setupForm = document.getElementById('setup-form');
 const numTasksSlider = document.getElementById('num-tasks');
 const numTasksDisplay = document.getElementById('num-tasks-display');
@@ -2759,6 +2828,7 @@ setupForm.addEventListener('submit', async (e) => {
   const config = {
     facility_type: facilityType,
     role: userRole,
+    analyst_name: state.analystName || '',
     task_count: parseInt(numTasksSlider.value),
     task_time_target_minutes: parseInt(document.getElementById('task-time').value),
     shift_duration: parseInt(document.getElementById('shift-duration').value),
@@ -2792,8 +2862,10 @@ function startWorkspace(config) {
   document.getElementById('setup-screen').style.display = 'none';
   document.getElementById('workspace').style.display = 'flex';
 
-  // Set role badge
-  document.getElementById('role-badge').textContent = ROLE_NAMES[config.role] || config.role;
+  // Set role badge -- who is signed in, falling back to the assignment alone.
+  const roleLabel = ROLE_NAMES[config.role] || config.role;
+  document.getElementById('role-badge').textContent =
+    config.analyst_name ? (config.analyst_name + ' · ' + roleLabel) : roleLabel;
 
   // Python nav
   if (config.python_enabled) {
@@ -4763,8 +4835,10 @@ startWorkspace = function(config) {
   loadReportTemplates();
 };
 
-// Hide workspace initially
+// Show the sign-in gate first; workspace and shift-settings stay hidden.
 document.getElementById('workspace').style.display = 'none';
+document.getElementById('setup-screen').style.display = 'none';
+document.getElementById('signin-screen').style.display = 'flex';
 
 </script>
 </body>
