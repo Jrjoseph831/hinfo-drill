@@ -123,6 +123,12 @@ input,select,textarea{font-family:inherit;font-size:inherit}
   line-height:1.5;
 }
 .signin-lead strong{color:var(--text-primary)}
+.signin-foot{
+  margin-top:14px;
+  text-align:center;
+  color:var(--text-secondary);
+  font-size:0.8rem;
+}
 
 .setup-card{
   background:var(--bg-secondary);
@@ -1949,210 +1955,49 @@ input,select,textarea{font-family:inherit;font-size:inherit}
     </div>
     <div class="setup-body">
       <form id="signin-form" autocomplete="off">
-        <p class="signin-lead"><strong>Sign in to your shift.</strong> Badge yourself in to open the queue.</p>
+        <p class="signin-lead"><strong>Sign in to your shift.</strong> Live Synthea patients &middot; tasks tuned to your role.</p>
         <div class="form-group">
           <label for="analyst-name">Name</label>
           <input type="text" id="analyst-name" placeholder="Your name" maxlength="40" required>
         </div>
         <div class="form-group">
-          <label for="signin-role">Assignment</label>
+          <label for="signin-role">Role</label>
           <select id="signin-role">
             <option value="clinical_informatics_analyst" selected>Clinical Informatics Analyst</option>
-            <option value="health_information_specialist">Health Information Specialist</option>
-            <option value="clinical_data_analyst">Clinical Data Analyst</option>
-            <option value="ehr_system_administrator">EHR System Administrator</option>
+            <option value="data_analyst">Data Analyst</option>
+            <option value="compliance_officer">Compliance Officer</option>
+            <option value="system_administrator">System Administrator</option>
+            <option value="clinical_staff">Clinical Staff</option>
           </select>
         </div>
-        <button type="submit" class="btn-start" id="btn-signin">Continue &#9654;</button>
-      </form>
-    </div>
-  </div>
-</div>
-<!-- ================================================================
-     SHIFT SETTINGS
-     ================================================================ -->
-<div id="setup-screen">
-  <div class="setup-card">
-    <div class="setup-header">
-      <span class="icon">⚕</span>
-      <h1>Health Informatics Drill</h1>
-      <p>Interactive Clinical Informatics Simulation Platform</p>
-    </div>
-    <div class="setup-body">
-      <form id="setup-form" autocomplete="off">
-
-        <!-- Facility & Role -->
-        <div class="form-section">
-          <div class="form-section-title">Facility &amp; Role</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="facility-type">Facility Type</label>
-              <select id="facility-type" required>
-                <option value="">Select facility...</option>
-                <option value="community_hospital">Community Hospital</option>
-                <option value="academic_medical_center">Academic Medical Center</option>
-                <option value="multi_site_health_system">Multi-Site Health System</option>
-                <option value="ambulatory_clinic">Ambulatory Clinic</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="user-role">Your Role</label>
-              <select id="user-role" required>
-                <option value="">Select role...</option>
-                <option value="clinical_informatics_analyst">Clinical Informatics Analyst</option>
-                <option value="health_information_specialist">Health Information Specialist</option>
-                <option value="clinical_data_analyst">Clinical Data Analyst</option>
-                <option value="ehr_system_administrator">EHR System Administrator</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Workload Configuration -->
-        <div class="form-section">
-          <div class="form-section-title">Workload Configuration</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="num-tasks">Number of Tasks: <span id="num-tasks-display" class="slider-value" style="display:inline;font-size:0.85rem;padding:2px 6px">5</span></label>
-              <div class="slider-group">
-                <input type="range" id="num-tasks" min="1" max="15" value="5">
+        <div class="form-group">
+          <label>Difficulty</label>
+          <div class="radio-group" id="signin-difficulty">
+            <label class="radio-option selected">
+              <input type="radio" name="signin-diff" value="beginner" checked>
+              <div>
+                <div class="radio-label">Beginner</div>
+                <div class="radio-desc">Guided, with examples and detail</div>
               </div>
-            </div>
-            <div class="form-group">
-              <label for="task-time">Task Time Target</label>
-              <select id="task-time">
-                <option value="15">15 min — Quick Task</option>
-                <option value="30" selected>30 min — Half Hour</option>
-                <option value="60">1 hour — Standard</option>
-                <option value="120">2 hours — Extended</option>
-                <option value="240">4 hours — Half Shift</option>
-                <option value="480">8 hours — Full Shift</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row single">
-            <div class="form-group">
-              <label for="shift-duration">Shift Duration</label>
-              <select id="shift-duration">
-                <option value="2">2 hours</option>
-                <option value="4" selected>4 hours</option>
-                <option value="8">8 hours</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Difficulty & Assistance -->
-        <div class="form-section">
-          <div class="form-section-title">Difficulty &amp; Assistance</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Difficulty Level</label>
-              <div class="radio-group" id="difficulty-group">
-                <label class="radio-option selected">
-                  <input type="radio" name="difficulty" value="beginner" checked>
-                  <div>
-                    <div class="radio-label">Beginner</div>
-                    <div class="radio-desc">Guided with examples and detailed instructions</div>
-                  </div>
-                </label>
-                <label class="radio-option">
-                  <input type="radio" name="difficulty" value="intermediate">
-                  <div>
-                    <div class="radio-label">Intermediate</div>
-                    <div class="radio-desc">Some guidance, requires prior knowledge</div>
-                  </div>
-                </label>
-                <label class="radio-option">
-                  <input type="radio" name="difficulty" value="advanced">
-                  <div>
-                    <div class="radio-label">Advanced</div>
-                    <div class="radio-desc">Minimal support, realistic complexity</div>
-                  </div>
-                </label>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="signin-diff" value="intermediate">
+              <div>
+                <div class="radio-label">Intermediate</div>
+                <div class="radio-desc">Some guidance, prior knowledge assumed</div>
               </div>
-            </div>
-            <div class="form-group">
-              <label>Assistance Level</label>
-              <div class="radio-group" id="assistance-group">
-                <label class="radio-option selected">
-                  <input type="radio" name="assistance" value="full" checked>
-                  <div>
-                    <div class="radio-label">Full Walkthrough</div>
-                    <div class="radio-desc">Step-by-step instructions for every task</div>
-                  </div>
-                </label>
-                <label class="radio-option">
-                  <input type="radio" name="assistance" value="hints">
-                  <div>
-                    <div class="radio-label">Hints Available</div>
-                    <div class="radio-desc">General guidance when you ask for it</div>
-                  </div>
-                </label>
-                <label class="radio-option">
-                  <input type="radio" name="assistance" value="minimal">
-                  <div>
-                    <div class="radio-label">Minimal</div>
-                    <div class="radio-desc">Just the task, figure it out yourself</div>
-                  </div>
-                </label>
-                <label class="radio-option">
-                  <input type="radio" name="assistance" value="none">
-                  <div>
-                    <div class="radio-label">None</div>
-                    <div class="radio-desc">Complete independence, no help available</div>
-                  </div>
-                </label>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="signin-diff" value="advanced">
+              <div>
+                <div class="radio-label">Advanced</div>
+                <div class="radio-desc">Minimal support, realistic complexity</div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Data Source -->
-        <div class="form-section">
-          <div class="form-section-title">Data Source</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Patient Data Engine</label>
-              <div class="radio-group" id="datasource-group">
-                <label class="radio-option selected">
-                  <input type="radio" name="data_source" value="faker" checked>
-                  <div>
-                    <div class="radio-label">Standard (Faker)</div>
-                    <div class="radio-desc">Random patient data — fast, good for general practice</div>
-                  </div>
-                </label>
-                <label class="radio-option">
-                  <input type="radio" name="data_source" value="synthea">
-                  <div>
-                    <div class="radio-label">Synthea (Realistic)</div>
-                    <div class="radio-desc">Clinically coherent histories — diabetics have metformin, cardiac patients have troponin, etc.</div>
-                  </div>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tools -->
-        <div class="form-section">
-          <div class="form-section-title">Tools</div>
-          <div class="toggle-row">
-            <div class="toggle-info">
-              <div class="toggle-label">Python Console</div>
-              <div class="toggle-desc">Enable Python scripting for data analysis tasks</div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="python-enabled">
-              <span class="slider"></span>
             </label>
           </div>
         </div>
-
-        <!-- Start Button -->
-        <button type="submit" class="btn-start" id="btn-start">
-          Start Shift &#9654;
-        </button>
+        <button type="submit" class="btn-start" id="btn-signin">Start Shift &#9654;</button>
+        <p class="signin-foot">Tasks are tuned to your role. No time limit.</p>
       </form>
     </div>
   </div>
@@ -2167,10 +2012,7 @@ input,select,textarea{font-family:inherit;font-size:inherit}
       <span class="logo-icon">⚕</span> HI Drill
     </div>
     <div class="topbar-center">
-      <div class="shift-clock" id="shift-clock">00:00:00</div>
-      <div class="shift-progress">
-        <div class="shift-progress-bar" id="shift-progress-bar" style="width:0%"></div>
-      </div>
+      <div class="shift-clock" id="shift-clock" title="Time on shift">00:00:00</div>
     </div>
     <div class="topbar-right">
       <div class="task-progress">
@@ -2685,9 +2527,10 @@ const state = {
    ================================================================ */
 const ROLE_NAMES = {
   clinical_informatics_analyst: 'Clinical Informatics Analyst',
-  health_information_specialist: 'Health Information Specialist',
-  clinical_data_analyst: 'Clinical Data Analyst',
-  ehr_system_administrator: 'EHR System Administrator'
+  data_analyst: 'Data Analyst',
+  compliance_officer: 'Compliance Officer',
+  system_administrator: 'System Administrator',
+  clinical_staff: 'Clinical Staff'
 };
 
 /* ================================================================
@@ -2782,31 +2625,7 @@ function priorityClass(p) {
    SETUP FORM
    ================================================================ */
 /* Sign-in gate: capture the analyst's name, then reveal shift settings. */
-const signinForm = document.getElementById('signin-form');
-signinForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const name = (document.getElementById('analyst-name').value || '').trim();
-  if (!name) {
-    showToast('Enter your name to badge in.', 'warning');
-    return;
-  }
-  state.analystName = name;
-  // Carry the chosen assignment over to the shift-settings screen.
-  const setupRole = document.getElementById('user-role');
-  if (setupRole) setupRole.value = document.getElementById('signin-role').value;
-  document.getElementById('signin-screen').style.display = 'none';
-  document.getElementById('setup-screen').style.display = 'flex';
-});
-
-const setupForm = document.getElementById('setup-form');
-const numTasksSlider = document.getElementById('num-tasks');
-const numTasksDisplay = document.getElementById('num-tasks-display');
-
-numTasksSlider.addEventListener('input', () => {
-  numTasksDisplay.textContent = numTasksSlider.value;
-});
-
-// Radio button styling
+// Radio button styling (drives the difficulty selector on the sign-in screen).
 document.querySelectorAll('.radio-group').forEach(group => {
   group.addEventListener('change', (e) => {
     group.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('selected'));
@@ -2814,42 +2633,58 @@ document.querySelectorAll('.radio-group').forEach(group => {
   });
 });
 
-setupForm.addEventListener('submit', async (e) => {
+// A fixed "certain amount" of tasks, tuned to the assignment.
+const ROLE_TASK_COUNT = {
+  clinical_informatics_analyst: 6,
+  data_analyst: 6,
+  system_administrator: 5,
+  compliance_officer: 5,
+  clinical_staff: 4,
+};
+// Difficulty implies how much hand-holding the shift offers.
+const DIFFICULTY_ASSISTANCE = {
+  beginner: 'full',
+  intermediate: 'hints',
+  advanced: 'minimal',
+};
+
+const signinForm = document.getElementById('signin-form');
+signinForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-
-  const facilityType = document.getElementById('facility-type').value;
-  const userRole = document.getElementById('user-role').value;
-
-  if (!facilityType || !userRole) {
-    showToast('Please select both Facility Type and Role.', 'warning');
+  const name = (document.getElementById('analyst-name').value || '').trim();
+  if (!name) {
+    showToast('Enter your name to badge in.', 'warning');
     return;
   }
+  state.analystName = name;
 
+  const role = document.getElementById('signin-role').value;
+  const difficulty = document.querySelector('input[name="signin-diff"]:checked').value;
+
+  // Everything else is fixed for realism: always Synthea, no time limit,
+  // Python console disabled, task load set by role.
   const config = {
-    facility_type: facilityType,
-    role: userRole,
-    analyst_name: state.analystName || '',
-    task_count: parseInt(numTasksSlider.value),
-    task_time_target_minutes: parseInt(document.getElementById('task-time').value),
-    shift_duration: parseInt(document.getElementById('shift-duration').value),
-    difficulty: document.querySelector('input[name="difficulty"]:checked').value,
-    assistance_level: document.querySelector('input[name="assistance"]:checked').value,
-    python_enabled: document.getElementById('python-enabled').checked,
-    data_source: document.querySelector('input[name="data_source"]:checked').value
+    role: role,
+    analyst_name: name,
+    difficulty: difficulty,
+    assistance_level: DIFFICULTY_ASSISTANCE[difficulty] || 'hints',
+    task_count: ROLE_TASK_COUNT[role] || 5,
+    data_source: 'synthea',
+    python_enabled: false,
   };
 
-  const btn = document.getElementById('btn-start');
+  const btn = document.getElementById('btn-signin');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Starting...';
+  btn.innerHTML = '<span class="spinner"></span> Starting shift...';
 
   try {
     const data = await api('/api/scenario/start', 'POST', config);
     state.scenario = data;
     state.config = config;
     startWorkspace(config);
-    showToast('Shift started! Check your inbox for assignments.', 'success');
+    showToast('Shift started. Check your inbox for assignments.', 'success');
   } catch (err) {
-    showToast('Failed to start scenario: ' + err.message, 'error');
+    showToast('Failed to start shift: ' + err.message, 'error');
     btn.disabled = false;
     btn.innerHTML = 'Start Shift \u25b6';
   }
@@ -2859,7 +2694,7 @@ setupForm.addEventListener('submit', async (e) => {
    WORKSPACE INITIALIZATION
    ================================================================ */
 function startWorkspace(config) {
-  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('signin-screen').style.display = 'none';
   document.getElementById('workspace').style.display = 'flex';
 
   // Set role badge -- who is signed in, falling back to the assignment alone.
@@ -2867,13 +2702,7 @@ function startWorkspace(config) {
   document.getElementById('role-badge').textContent =
     config.analyst_name ? (config.analyst_name + ' · ' + roleLabel) : roleLabel;
 
-  // Python nav
-  if (config.python_enabled) {
-    document.getElementById('nav-python').classList.remove('hidden');
-  }
-
-  // Shift timer
-  state.shiftDuration = config.shift_duration * 3600;
+  // No time limit: the clock counts time on shift, not down to a deadline.
   state.shiftStartTime = Date.now();
   startShiftTimer();
 
@@ -2896,22 +2725,10 @@ function startShiftTimer() {
 }
 
 function updateShiftClock() {
-  const elapsed = (Date.now() - state.shiftStartTime) / 1000;
-  const remaining = Math.max(0, state.shiftDuration - elapsed);
-  const pct = Math.min(100, (elapsed / state.shiftDuration) * 100);
-
+  // Elapsed time on shift -- counts up, no deadline.
+  const elapsed = Math.floor((Date.now() - state.shiftStartTime) / 1000);
   const clockEl = document.getElementById('shift-clock');
-  clockEl.textContent = formatTime(remaining);
-  clockEl.className = 'shift-clock';
-  if (remaining < 300) clockEl.classList.add('danger');
-  else if (remaining < 900) clockEl.classList.add('warning');
-
-  document.getElementById('shift-progress-bar').style.width = pct + '%';
-
-  if (remaining <= 0) {
-    clearInterval(state.shiftTimerInterval);
-    showToast('Shift time is up!', 'warning', 10000);
-  }
+  if (clockEl) clockEl.textContent = formatTime(elapsed);
 }
 
 /* ================================================================
@@ -4173,9 +3990,10 @@ document.getElementById('btn-reset').addEventListener('click', () => {
         notifications: [], inboxFilter: 'all', ehrTab: 'encounters'
       });
 
+      if (state.shiftTimerInterval) clearInterval(state.shiftTimerInterval);
       document.getElementById('workspace').style.display = 'none';
-      document.getElementById('setup-screen').style.display = '';
-      const btn = document.getElementById('btn-start');
+      document.getElementById('signin-screen').style.display = 'flex';
+      const btn = document.getElementById('btn-signin');
       btn.disabled = false;
       btn.innerHTML = 'Start Shift \u25b6';
 
@@ -4835,9 +4653,8 @@ startWorkspace = function(config) {
   loadReportTemplates();
 };
 
-// Show the sign-in gate first; workspace and shift-settings stay hidden.
+// Show the sign-in gate first; the workspace stays hidden until shift start.
 document.getElementById('workspace').style.display = 'none';
-document.getElementById('setup-screen').style.display = 'none';
 document.getElementById('signin-screen').style.display = 'flex';
 
 </script>
